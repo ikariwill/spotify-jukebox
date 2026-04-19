@@ -22,7 +22,7 @@ A full-stack internal jukebox app. The tablet runs the player; anyone who scans 
 ```bash
 git clone <repo-url>
 cd spotify-jukebox
-npm install
+pnpm install
 ```
 
 ### 2. Create a Spotify App
@@ -53,10 +53,11 @@ cp .env.example frontend/.env.local
 ### 4. Run
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 This starts both servers concurrently:
+
 - Frontend: [http://localhost:3000](http://localhost:3000)
 - Backend: [http://localhost:3001](http://localhost:3001)
 
@@ -91,41 +92,41 @@ The tablet is now the active player.
 
 ## Features
 
-| Feature | Details |
-|---|---|
-| Spotify OAuth | Authorization Code Flow, tokens in server session only |
-| Web Playback SDK | Browser-based player on the tablet, auto-transfers playback |
-| Real-time queue | Socket.IO broadcasts queue changes instantly to all clients |
-| Voting | ▲/▼ per session, queue auto-sorts by score (FIFO tiebreak) |
-| Anti-spam | Configurable song limit + cooldown per session |
-| Party Mode | Disables anti-spam — toggle from the tablet |
-| Smart autoplay | When queue empties, seeds recommendations from recently played |
-| Analytics | In-memory play counts and user activity |
-| Redis (optional) | Set `REDIS_URL` for persistent sessions across restarts |
-| WakeLock | Prevents tablet screen from sleeping (HTTPS/localhost only) |
+| Feature          | Details                                                        |
+| ---------------- | -------------------------------------------------------------- |
+| Spotify OAuth    | Authorization Code Flow, tokens in server session only         |
+| Web Playback SDK | Browser-based player on the tablet, auto-transfers playback    |
+| Real-time queue  | Socket.IO broadcasts queue changes instantly to all clients    |
+| Voting           | ▲/▼ per session, queue auto-sorts by score (FIFO tiebreak)     |
+| Anti-spam        | Configurable song limit + cooldown per session                 |
+| Party Mode       | Disables anti-spam — toggle from the tablet                    |
+| Smart autoplay   | When queue empties, seeds recommendations from recently played |
+| Analytics        | In-memory play counts and user activity                        |
+| Redis (optional) | Set `REDIS_URL` for persistent sessions across restarts        |
+| WakeLock         | Prevents tablet screen from sleeping (HTTPS/localhost only)    |
 
 ## Environment Variables
 
 ### Backend (`backend/.env`)
 
-| Variable | Default | Description |
-|---|---|---|
-| `SPOTIFY_CLIENT_ID` | — | From Spotify Developer Dashboard |
-| `SPOTIFY_CLIENT_SECRET` | — | From Spotify Developer Dashboard |
-| `SPOTIFY_REDIRECT_URI` | `http://localhost:3001/auth/callback` | Must match your Spotify app config |
-| `SESSION_SECRET` | — | Long random string for session signing |
-| `PORT` | `3001` | Backend port |
-| `FRONTEND_URL` | `http://localhost:3000` | Used for CORS and OAuth redirects |
-| `MAX_SONGS_PER_USER` | `3` | Max songs a user can add per session |
-| `COOLDOWN_MS` | `30000` | Cooldown between submissions (ms) |
-| `REDIS_URL` | _(empty)_ | Optional Redis URL for session persistence |
+| Variable                | Default                               | Description                                |
+| ----------------------- | ------------------------------------- | ------------------------------------------ |
+| `SPOTIFY_CLIENT_ID`     | —                                     | From Spotify Developer Dashboard           |
+| `SPOTIFY_CLIENT_SECRET` | —                                     | From Spotify Developer Dashboard           |
+| `SPOTIFY_REDIRECT_URI`  | `http://localhost:3001/auth/callback` | Must match your Spotify app config         |
+| `SESSION_SECRET`        | —                                     | Long random string for session signing     |
+| `PORT`                  | `3001`                                | Backend port                               |
+| `FRONTEND_URL`          | `http://localhost:3000`               | Used for CORS and OAuth redirects          |
+| `MAX_SONGS_PER_USER`    | `3`                                   | Max songs a user can add per session       |
+| `COOLDOWN_MS`           | `30000`                               | Cooldown between submissions (ms)          |
+| `REDIS_URL`             | _(empty)_                             | Optional Redis URL for session persistence |
 
 ### Frontend (`frontend/.env.local`)
 
-| Variable | Default | Description |
-|---|---|---|
-| `NEXT_PUBLIC_BACKEND_URL` | `http://localhost:3001` | Backend REST URL |
-| `NEXT_PUBLIC_SOCKET_URL` | `http://localhost:3001` | Socket.IO server URL |
+| Variable                  | Default                 | Description          |
+| ------------------------- | ----------------------- | -------------------- |
+| `NEXT_PUBLIC_BACKEND_URL` | `http://localhost:3001` | Backend REST URL     |
+| `NEXT_PUBLIC_SOCKET_URL`  | `http://localhost:3001` | Socket.IO server URL |
 
 ## Production Notes
 

@@ -10,18 +10,18 @@
 
 ```bash
 # Both packages
-npm run test
+pnpm test
 
 # Single package
-npm run test --workspace=backend
-npm run test --workspace=frontend
+pnpm --filter @jukebox/backend test
+pnpm --filter @jukebox/frontend test
 
 # Watch mode
-npm run test:watch --workspace=backend
+pnpm --filter @jukebox/backend test:watch
 
 # Coverage report
-npm run test:coverage --workspace=backend
-npm run test:coverage --workspace=frontend
+pnpm --filter @jukebox/backend test:coverage
+pnpm --filter @jukebox/frontend test:coverage
 ```
 
 ## File locations
@@ -46,7 +46,7 @@ const mocks = vi.hoisted(() => ({
   apiGet: vi.fn(),
 }));
 
-vi.mock('axios', () => ({
+vi.mock("axios", () => ({
   default: {
     create: vi.fn(() => ({ post: mocks.accountsPost })),
     get: mocks.apiGet,
@@ -63,7 +63,7 @@ Middleware and routes import services from `backend/src/index.ts`. Mock it using
 // index.ts is at: src/index.ts
 // Relative path from test file: ../../index
 
-vi.mock('../../index', () => ({
+vi.mock("../../index", () => ({
   spotifyService: {
     isExpired: vi.fn(),
     refreshTokens: vi.fn(),
@@ -78,13 +78,17 @@ Vitest resolves both paths to the same module — the mock applies correctly to 
 `QueueService.canAdd()` uses `Date.now()`. Use fake timers:
 
 ```ts
-beforeEach(() => { vi.useFakeTimers(); });
-afterEach(() => { vi.useRealTimers(); });
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-it('allows after cooldown expires', () => {
-  service.addTrack(makeTrack(), 'session-1');
+it("allows after cooldown expires", () => {
+  service.addTrack(makeTrack(), "session-1");
   vi.advanceTimersByTime(30001);
-  expect(service.canAdd('session-1').allowed).toBe(true);
+  expect(service.canAdd("session-1").allowed).toBe(true);
 });
 ```
 
@@ -102,7 +106,11 @@ service.stop();
 ```ts
 const makeReq = (overrides: any = {}): Partial<Request> => ({
   session: {
-    tokens: { accessToken: 'at', refreshToken: 'rt', expiresAt: Date.now() + 3_600_000 },
+    tokens: {
+      accessToken: "at",
+      refreshToken: "rt",
+      expiresAt: Date.now() + 3_600_000,
+    },
     save: vi.fn((cb: any) => cb(null)),
     destroy: vi.fn((cb: any) => cb(null)),
     ...overrides.session,
@@ -123,13 +131,22 @@ const makeRes = () => {
 Capture registered handlers by intercepting `socket.on`:
 
 ```ts
-const socket = { emit: vi.fn(), on: vi.fn(), request: { session: { id: 'session-1' } } };
-const io = { on: vi.fn((e, cb) => { if (e === 'connection') cb(socket); }), emit: vi.fn() };
+const socket = {
+  emit: vi.fn(),
+  on: vi.fn(),
+  request: { session: { id: "session-1" } },
+};
+const io = {
+  on: vi.fn((e, cb) => {
+    if (e === "connection") cb(socket);
+  }),
+  emit: vi.fn(),
+};
 
 registerSocketHandlers(io as any, queueService);
 
 // Extract the handler for a specific event
-const addHandler = socket.on.mock.calls.find(([e]) => e === 'queue:add')?.[1];
+const addHandler = socket.on.mock.calls.find(([e]) => e === "queue:add")?.[1];
 const cb = vi.fn();
 addHandler(track, cb);
 expect(cb).toHaveBeenCalledWith(); // no error arg = success
@@ -142,7 +159,11 @@ Always reset store state in `beforeEach` to prevent test pollution:
 ```ts
 beforeEach(() => {
   usePlayerStore.setState({
-    nowPlaying: null, isPlaying: false, volume: 50, progress: 0, partyMode: false,
+    nowPlaying: null,
+    isPlaying: false,
+    volume: 50,
+    progress: 0,
+    partyMode: false,
   });
   useQueueStore.setState({ tracks: [], userStatus: null });
 });
@@ -153,9 +174,9 @@ beforeEach(() => {
 Add per test file (or globally in `src/test/setup.ts` if needed everywhere):
 
 ```ts
-vi.mock('next/image', () => ({
+vi.mock("next/image", () => ({
   default: ({ src, alt }: { src: string; alt: string }) =>
-    React.createElement('img', { src, alt }),
+    React.createElement("img", { src, alt }),
 }));
 ```
 
@@ -167,7 +188,7 @@ const mocks = vi.hoisted(() => ({
   put: vi.fn().mockResolvedValue({}),
 }));
 
-vi.mock('axios', () => ({
+vi.mock("axios", () => ({
   default: { create: vi.fn(() => mocks) },
 }));
 ```
@@ -196,7 +217,7 @@ const mocks = vi.hoisted(() => ({
   io: vi.fn(),
 }));
 
-vi.mock('socket.io-client', () => ({ io: mocks.io }));
+vi.mock("socket.io-client", () => ({ io: mocks.io }));
 
 mocks.io.mockReturnValue({ on: mocks.on, disconnect: mocks.disconnect });
 ```
@@ -207,14 +228,14 @@ Loaded automatically before every test file (configured in `vitest.config.ts`).
 Sets `@testing-library/jest-dom` matchers and env vars:
 
 ```ts
-import '@testing-library/jest-dom';
-process.env.NEXT_PUBLIC_BACKEND_URL = 'http://localhost:3001';
-process.env.NEXT_PUBLIC_SOCKET_URL = 'http://localhost:3001';
+import "@testing-library/jest-dom";
+process.env.NEXT_PUBLIC_BACKEND_URL = "http://localhost:3001";
+process.env.NEXT_PUBLIC_SOCKET_URL = "http://localhost:3001";
 ```
 
 ## Vitest config — path aliases
 
-Both `backend/vitest.config.ts` and `frontend/vitest.config.ts` define the `@jukebox/shared` alias pointing directly to the TypeScript source (not the compiled output). This means tests do not require `npm run build --workspace=shared` before running.
+Both `backend/vitest.config.ts` and `frontend/vitest.config.ts` define the `@jukebox/shared` alias pointing directly to the TypeScript source (not the compiled output). This means tests do not require `pnpm --filter @jukebox/shared build` before running.
 
 ```ts
 resolve: {
