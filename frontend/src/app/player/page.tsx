@@ -1,27 +1,23 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useSpotifyPlayer } from '@/hooks/useSpotifyPlayer';
-import { useSocket } from '@/hooks/useSocket';
-import { usePlayerStore } from '@/store/playerStore';
-import { NowPlaying } from '@/components/player/NowPlaying';
-import { Controls } from '@/components/player/Controls';
-import { ProgressBar } from '@/components/player/ProgressBar';
-import { QueuePreview } from '@/components/player/QueuePreview';
-import { QRCodeDisplay } from '@/components/player/QRCodeDisplay';
+import { useEffect, useState } from 'react'
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001',
-  withCredentials: true,
-});
+import { Controls } from '@/components/player/Controls'
+import { NowPlaying } from '@/components/player/NowPlaying'
+import { ProgressBar } from '@/components/player/ProgressBar'
+import { QRCodeDisplay } from '@/components/player/QRCodeDisplay'
+import { QueuePreview } from '@/components/player/QueuePreview'
+import { useSocket } from '@/hooks/useSocket'
+import { useSpotifyPlayer } from '@/hooks/useSpotifyPlayer'
+import { api } from '@/lib/api'
+import { usePlayerStore } from '@/store/playerStore'
 
 export default function PlayerPage() {
   useSpotifyPlayer();
   useSocket();
 
   const partyMode = usePlayerStore((s) => s.partyMode);
-  const [remoteUrl, setRemoteUrl] = useState('');
+  const [remoteUrl, setRemoteUrl] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -31,19 +27,19 @@ export default function PlayerPage() {
   // Check auth on mount
   useEffect(() => {
     api
-      .get('/auth/status')
-      .then(({ data }) => setIsAuthenticated(data.authenticated))
+      .get<{ authenticated: boolean }>("/auth/status")
+      .then((data) => setIsAuthenticated(data.authenticated))
       .catch(() => setIsAuthenticated(false));
   }, []);
 
   // WakeLock to prevent screen sleep on tablet
   useEffect(() => {
-    if (!('wakeLock' in navigator)) return;
+    if (!("wakeLock" in navigator)) return;
     let wakeLock: WakeLockSentinel | null = null;
 
     const acquire = async () => {
       try {
-        wakeLock = await (navigator as any).wakeLock.request('screen');
+        wakeLock = await (navigator as any).wakeLock.request("screen");
       } catch {
         // WakeLock unavailable (e.g. on HTTP in some browsers)
       }
@@ -52,18 +48,18 @@ export default function PlayerPage() {
     acquire();
 
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') acquire();
+      if (document.visibilityState === "visible") acquire();
     };
-    document.addEventListener('visibilitychange', handleVisibility);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       wakeLock?.release();
-      document.removeEventListener('visibilitychange', handleVisibility);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 
   const togglePartyMode = () => {
-    api.post('/admin/party-mode').catch(console.error);
+    api.post("/admin/party-mode").catch(console.error);
   };
 
   if (isAuthenticated === false) {
@@ -71,10 +67,14 @@ export default function PlayerPage() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-spotify-dark">
         <div className="text-center">
           <p className="text-6xl mb-4">🎵</p>
-          <h1 className="text-3xl font-bold text-spotify-green mb-2">Jukebox</h1>
-          <p className="text-gray-400 mb-8">Connect your Spotify account to start</p>
+          <h1 className="text-3xl font-bold text-spotify-green mb-2">
+            Jukebox
+          </h1>
+          <p className="text-gray-400 mb-8">
+            Connect your Spotify account to start
+          </p>
           <a
-            href={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001'}/auth/login`}
+            href={`${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001"}/auth/login`}
             className="bg-spotify-green text-black font-bold px-8 py-4 rounded-full text-lg hover:bg-green-400 transition-colors"
           >
             Login with Spotify
@@ -108,11 +108,11 @@ export default function PlayerPage() {
             onClick={togglePartyMode}
             className={`text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
               partyMode
-                ? 'bg-yellow-400 text-black border-yellow-400'
-                : 'border-white/20 text-gray-400 hover:border-white/40 hover:text-white'
+                ? "bg-yellow-400 text-black border-yellow-400"
+                : "border-white/20 text-gray-400 hover:border-white/40 hover:text-white"
             }`}
           >
-            🎉 Party Mode {partyMode ? 'ON' : 'OFF'}
+            🎉 Party Mode {partyMode ? "ON" : "OFF"}
           </button>
           <a
             href="/stats"

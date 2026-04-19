@@ -1,25 +1,20 @@
-'use client';
+"use client";
 
-import axios from 'axios';
-import { usePlayerStore } from '@/store/playerStore';
-
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001',
-  withCredentials: true,
-});
+import { api } from '@/lib/api'
+import { usePlayerStore } from '@/store/playerStore'
 
 export function Controls() {
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const volume = usePlayerStore((s) => s.volume);
   const setPlayerState = usePlayerStore((s) => s.setPlayerState);
 
-  const handlePlay = () => api.post('/spotify/play').catch(console.error);
-  const handlePause = () => api.post('/spotify/pause').catch(console.error);
-  const handleSkip = () => api.post('/spotify/skip').catch(console.error);
+  const handlePlay = () => api.post("/spotify/play").catch(console.error);
+  const handlePause = () => api.post("/spotify/pause").catch(console.error);
+  const handleSkip = () => api.post("/spotify/skip").catch(console.error);
 
   const handleVolume = (v: number) => {
     setPlayerState({ isPlaying, volume: v });
-    api.put('/spotify/volume', { volume: v }).catch(console.error);
+    api.put("/spotify/volume", { volume: v }).catch(console.error);
   };
 
   return (
@@ -28,9 +23,9 @@ export function Controls() {
         <button
           onClick={isPlaying ? handlePause : handlePlay}
           className="w-16 h-16 rounded-full bg-white flex items-center justify-center text-spotify-black text-2xl hover:scale-105 active:scale-95 transition-transform shadow-lg"
-          aria-label={isPlaying ? 'Pause' : 'Play'}
+          aria-label={isPlaying ? "Pause" : "Play"}
         >
-          {isPlaying ? '⏸' : '▶'}
+          {isPlaying ? "⏸" : "▶"}
         </button>
         <button
           onClick={handleSkip}

@@ -1,21 +1,22 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import axios from 'axios';
-import { useQueueStore } from '../store/queueStore';
-import { usePlayerStore } from '../store/playerStore';
-import type { SpotifyTrack } from '@jukebox/shared';
+import { useCallback } from 'react'
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:3001',
-  withCredentials: true,
-});
+import { api } from '../lib/api'
+import { usePlayerStore } from '../store/playerStore'
+import { useQueueStore } from '../store/queueStore'
+
+import type { SpotifyTrack } from "@jukebox/shared";
 
 export function useQueue() {
   const { tracks, userStatus, setUserStatus } = useQueueStore();
 
   const fetchQueue = useCallback(async () => {
-    const { data } = await api.get('/queue');
+    const data = await api.get<{
+      tracks: any[];
+      userStatus: any;
+      partyMode: boolean;
+    }>("/queue");
     useQueueStore.getState().setTracks(data.tracks);
     setUserStatus(data.userStatus);
     usePlayerStore.getState().setPartyMode(data.partyMode);
@@ -23,10 +24,10 @@ export function useQueue() {
 
   const addTrack = useCallback(
     async (track: SpotifyTrack) => {
-      await api.post('/queue/add', track);
+      await api.post("/queue/add", track);
       await fetchQueue();
     },
-    [fetchQueue]
+    [fetchQueue],
   );
 
   const vote = useCallback(async (trackId: string, direction: 1 | -1) => {

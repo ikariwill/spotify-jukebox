@@ -1,10 +1,12 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useQueueStore } from '@/store/queueStore';
+import Image from 'next/image'
+import { useShallow } from 'zustand/react/shallow'
+
+import { useQueueStore } from '@/store/queueStore'
 
 export function QueuePreview() {
-  const tracks = useQueueStore((s) => s.tracks.slice(0, 6));
+  const tracks = useQueueStore(useShallow((s) => s.tracks.slice(0, 6)));
 
   return (
     <div className="flex-1 min-h-0 flex flex-col">
@@ -17,7 +19,9 @@ export function QueuePreview() {
             key={t.id}
             className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
           >
-            <span className="text-gray-600 w-4 text-xs text-center shrink-0">{i + 1}</span>
+            <span className="text-gray-600 w-4 text-xs text-center shrink-0">
+              {i + 1}
+            </span>
             <Image
               src={t.albumArt}
               alt={t.album}
@@ -33,10 +37,10 @@ export function QueuePreview() {
             <span
               className={`text-xs font-bold shrink-0 ${
                 t.votes > 0
-                  ? 'text-spotify-green'
+                  ? "text-spotify-green"
                   : t.votes < 0
-                  ? 'text-red-400'
-                  : 'text-gray-600'
+                    ? "text-red-400"
+                    : "text-gray-600"
               }`}
             >
               {t.votes > 0 ? `+${t.votes}` : t.votes}
@@ -44,7 +48,9 @@ export function QueuePreview() {
           </li>
         ))}
         {tracks.length === 0 && (
-          <li className="text-center text-gray-700 text-sm py-8">Queue is empty</li>
+          <li className="text-center text-gray-700 text-sm py-8">
+            Queue is empty
+          </li>
         )}
       </ul>
     </div>
