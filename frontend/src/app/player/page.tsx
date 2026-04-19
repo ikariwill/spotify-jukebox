@@ -1,9 +1,11 @@
 "use client";
 
+import { BarChart2, PartyPopper } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Controls } from '@/components/player/Controls'
 import { NowPlaying } from '@/components/player/NowPlaying'
+import { PlayerSearch } from '@/components/player/PlayerSearch'
 import { ProgressBar } from '@/components/player/ProgressBar'
 import { QRCodeDisplay } from '@/components/player/QRCodeDisplay'
 import { QueuePreview } from '@/components/player/QueuePreview'
@@ -106,27 +108,34 @@ export default function PlayerPage() {
         <div className="flex items-center gap-6 mt-2">
           <button
             onClick={togglePartyMode}
-            className={`text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
+            className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
               partyMode
                 ? "bg-yellow-400 text-black border-yellow-400"
                 : "border-white/20 text-gray-400 hover:border-white/40 hover:text-white"
             }`}
           >
-            🎉 Party Mode {partyMode ? "ON" : "OFF"}
+            <PartyPopper size={15} />
+            Party Mode {partyMode ? "ON" : "OFF"}
           </button>
           <a
             href="/stats"
-            className="text-sm text-gray-600 hover:text-gray-400 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors"
           >
-            📊 Stats
+            <BarChart2 size={15} />
+            Stats
           </a>
         </div>
       </div>
 
-      {/* Right panel — queue + QR code */}
-      <div className="w-72 xl:w-80 flex flex-col gap-4 p-6 border-l border-white/5 bg-black/20">
+      {/* Right panel — queue + search + QR code */}
+      <div className="w-72 xl:w-80 flex flex-col gap-4 p-6 border-l border-white/5 bg-black/20 overflow-y-auto">
         <QueuePreview />
-        <QRCodeDisplay url={remoteUrl} />
+        <div className="border-t border-white/5 pt-4">
+          <PlayerSearch />
+        </div>
+        <div className="border-t border-white/5 pt-4 mt-auto">
+          <QRCodeDisplay url={remoteUrl} />
+        </div>
       </div>
     </div>
   );

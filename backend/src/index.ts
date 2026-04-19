@@ -1,17 +1,22 @@
-import 'dotenv/config';
-import express from 'express';
-import http from 'http';
-import cors from 'cors';
-import session from 'express-session';
-import { Server } from 'socket.io';
-import type { ServerToClientEvents, ClientToServerEvents } from '@jukebox/shared';
+import 'dotenv/config'
 
-import { config } from './config';
-import { SpotifyService } from './services/SpotifyService';
-import { QueueService } from './services/QueueService';
-import { AnalyticsService } from './services/AnalyticsService';
-import { AutoPlayService } from './services/AutoPlayService';
-import { registerSocketHandlers } from './socket/handlers';
+import cors from 'cors'
+import express from 'express'
+import session from 'express-session'
+import http from 'http'
+import { Server } from 'socket.io'
+
+import { config } from './config'
+import { AnalyticsService } from './services/AnalyticsService'
+import { AutoPlayService } from './services/AutoPlayService'
+import { QueueService } from './services/QueueService'
+import { SpotifyService } from './services/SpotifyService'
+import { registerSocketHandlers } from './socket/handlers'
+
+import type {
+  ServerToClientEvents,
+  ClientToServerEvents,
+} from "@jukebox/shared";
 
 // ── Services (exported for use in routes/middleware) ─────────────────────────
 export const spotifyService = new SpotifyService();
@@ -23,31 +28,41 @@ const app = express();
 const httpServer = http.createServer(app);
 
 // ── Socket.IO ─────────────────────────────────────────────────────────────────
-export const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-  cors: {
-    origin: config.server.frontendUrl,
-    credentials: true,
+export const io = new Server<ClientToServerEvents, ServerToClientEvents>(
+  httpServer,
+  {
+    cors: {
+      origin: config.server.frontendUrl,
+      credentials: true,
+    },
   },
-});
+);
 
 // AutoPlayService needs io, so it's created after io
-export const autoPlayService = new AutoPlayService(queueService, spotifyService, io);
+export const autoPlayService = new AutoPlayService(
+  queueService,
+  spotifyService,
+  io,
+);
 
 // ── Session store (Redis if REDIS_URL set, else memory) ───────────────────────
 async function buildSessionStore() {
   if (config.redis.url) {
     try {
-      const { createClient } = await import('redis' as any);
-      const { RedisStore } = await import('connect-redis');
+      const { createClient } = await import("redis" as any);
+      const { RedisStore } = await import("connect-redis");
       const client = createClient({ url: config.redis.url });
       await client.connect();
-      console.log('[Session] Using Redis store');
+      console.log("[Session] Using Redis store");
       return new RedisStore({ client });
     } catch (err) {
-      console.warn('[Session] Redis unavailable, falling back to MemoryStore:', err);
+      console.warn(
+        "[Session] Redis unavailable, falling back to MemoryStore:",
+        err,
+      );
     }
   }
-  console.log('[Session] Using MemoryStore');
+  console.log("[Session] Using MemoryStore");
   return undefined;
 }
 
@@ -58,12 +73,12 @@ async function start() {
     store,
     secret: config.session.secret,
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === "production" ? "none" : false,
       maxAge: config.session.maxAge,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === "production",
     },
   });
 
@@ -79,17 +94,17 @@ async function start() {
 
   // ── Routes ───────────────────────────────────────────────────────────────────
   // Routes are imported after services are exported to avoid circular deps
-  const { authRouter } = await import('./routes/auth');
-  const { spotifyRouter } = await import('./routes/spotify');
-  const { queueRouter } = await import('./routes/queue');
-  const { analyticsRouter } = await import('./routes/analytics');
-  const { adminRouter } = await import('./routes/admin');
+  const { authRouter } = await import("./routes/auth");
+  const { spotifyRouter } = await import("./routes/spotify");
+  const { queueRouter } = await import("./routes/queue");
+  const { analyticsRouter } = await import("./routes/analytics");
+  const { adminRouter } = await import("./routes/admin");
 
-  app.use('/auth', authRouter);
-  app.use('/spotify', spotifyRouter);
-  app.use('/queue', queueRouter);
-  app.use('/analytics', analyticsRouter);
-  app.use('/admin', adminRouter);
+  app.use("/auth", authRouter);
+  app.use("/spotify", spotifyRouter);
+  app.use("/queue", queueRouter);
+  app.use("/analytics", analyticsRouter);
+  app.use("/admin", adminRouter);
 
   // ── Socket handlers ──────────────────────────────────────────────────────────
   registerSocketHandlers(io, queueService);
@@ -99,11 +114,13 @@ async function start() {
 
   // ── Start server ─────────────────────────────────────────────────────────────
   httpServer.listen(config.server.port, () => {
-    console.log(`[Server] Backend running on http://localhost:${config.server.port}`);
+    console.log(
+      `[Server] Backend running on http://localhost:${config.server.port}`,
+    );
   });
 }
 
 start().catch((err) => {
-  console.error('[Server] Fatal startup error:', err);
+  console.error("[Server] Fatal startup error:", err);
   process.exit(1);
 });

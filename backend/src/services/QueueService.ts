@@ -1,15 +1,24 @@
-import { v4 as uuidv4 } from 'uuid';
-import type { QueueTrack, SpotifyTrack } from '@jukebox/shared';
-import { config } from '../config';
+import { v4 as uuidv4 } from 'uuid'
 
-interface InternalQueueTrack extends Omit<QueueTrack, 'userVote'> {
+import { config } from '../config'
+
+import type { QueueTrack, SpotifyTrack } from "@jukebox/shared";
+interface InternalQueueTrack extends Omit<QueueTrack, "userVote"> {
   voters: Map<string, 1 | -1>;
 }
 
 export class QueueService {
   private queue: InternalQueueTrack[] = [];
-  private recentlyPlayed: Array<{ spotifyId: string; title: string; artist: string; albumArt: string }> = [];
-  private userActivity = new Map<string, { count: number; lastAdded: number }>();
+  private recentlyPlayed: Array<{
+    spotifyId: string;
+    title: string;
+    artist: string;
+    albumArt: string;
+  }> = [];
+  private userActivity = new Map<
+    string,
+    { count: number; lastAdded: number }
+  >();
   partyMode = false;
 
   getQueue(requestingSessionId?: string): QueueTrack[] {
@@ -59,6 +68,12 @@ export class QueueService {
     return this.recentlyPlayed.map((t) => t.spotifyId);
   }
 
+  popHistory():
+    | { spotifyId: string; title: string; artist: string; albumArt: string }
+    | undefined {
+    return this.recentlyPlayed.pop();
+  }
+
   canAdd(sessionId: string): { allowed: boolean; reason?: string } {
     if (this.partyMode) return { allowed: true };
 
@@ -99,7 +114,7 @@ export class QueueService {
     this.queue.push(internal);
     this.sort();
 
-    if (sessionId !== 'autoplay') {
+    if (sessionId !== "autoplay") {
       const activity = this.userActivity.get(sessionId);
       this.userActivity.set(sessionId, {
         count: (activity?.count ?? 0) + 1,

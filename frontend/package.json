@@ -2,7 +2,7 @@
   "name": "@jukebox/frontend",
   "version": "1.0.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@jukebox/shared": "workspace:*",
+    "lucide-react": "^1.8.0",
     "next": "^15.5.15",
     "qrcode": "^1.5.4",
     "react": "^19.2.5",
