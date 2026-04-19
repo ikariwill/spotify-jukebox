@@ -1,6 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-spotify-green: #1db954;
+  --color-spotify-black: #191414;
+  --color-spotify-dark: #121212;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 
 @layer base {
   html {
@@ -13,7 +18,7 @@
   }
 
   /* Custom range input styling */
-  input[type='range'] {
+  input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
     height: 4px;
@@ -22,21 +27,21 @@
     outline: none;
   }
 
-  input[type='range']::-webkit-slider-thumb {
+  input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #1DB954;
+    background: #1db954;
     cursor: pointer;
   }
 
-  input[type='range']::-moz-range-thumb {
+  input[type="range"]::-moz-range-thumb {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #1DB954;
+    background: #1db954;
     cursor: pointer;
     border: none;
   }
