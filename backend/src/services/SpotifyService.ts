@@ -26,11 +26,15 @@ async function spotifyFetch<T = void>(
   const fullUrl = params ? `${url}?${new URLSearchParams(params)}` : url;
   const res = await fetch(fullUrl, init);
   if (!res.ok) {
-    const err = new Error(`Spotify API error ${res.status}`);
+    const body = await res.text().catch(() => "");
+    const err = new Error(`Spotify API error ${res.status}: ${body}`);
     (err as any).response = { status: res.status };
     throw err;
   }
   if (res.status === 204) return undefined as unknown as T;
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json"))
+    return undefined as unknown as T;
   const text = await res.text();
   return text ? (JSON.parse(text) as T) : (undefined as unknown as T);
 }
@@ -145,7 +149,8 @@ export class SpotifyService {
     const data = await this.apiGet<any>("/search", tokens, {
       q: query,
       type: "track",
-      limit: "20",
+      limit: "10",
+      market: "from_token",
     });
     return data.tracks.items.map(this.mapTrack);
   }

@@ -1,5 +1,6 @@
-import { create } from 'zustand';
-import type { NowPlaying, PlayerState } from '@jukebox/shared';
+import { create } from 'zustand'
+
+import type { NowPlaying, PlayerState } from "@jukebox/shared";
 
 interface PlayerStore {
   nowPlaying: NowPlaying | null;
@@ -24,7 +25,7 @@ export const usePlayerStore = create<PlayerStore>((set, get) => ({
   setNowPlaying: (np) => set({ nowPlaying: np, progress: np?.progress ?? 0 }),
 
   setPlayerState: (state) =>
-    set({ isPlaying: state.isPlaying, volume: state.volume }),
+    set({ isPlaying: state.isPlaying, volume: state.volume ?? get().volume }),
 
   setProgress: (ms) => set({ progress: ms }),
 

@@ -49,7 +49,7 @@ export interface SpotifyTrack {
 
 export interface PlayerState {
   isPlaying: boolean;
-  volume: number;
+  volume?: number;
 }
 
 // ── Anti-spam ─────────────────────────────────────────────────────────────────
@@ -78,15 +78,19 @@ export interface AnalyticsStats {
 // ── Socket.IO events ──────────────────────────────────────────────────────────
 
 export interface ServerToClientEvents {
-  'queue:update': (queue: QueueTrack[]) => void;
-  'now-playing:update': (nowPlaying: NowPlaying | null) => void;
-  'player:state': (state: PlayerState) => void;
-  'party-mode:update': (enabled: boolean) => void;
+  "queue:update": (queue: QueueTrack[]) => void;
+  "now-playing:update": (nowPlaying: NowPlaying | null) => void;
+  "player:state": (state: PlayerState) => void;
+  "party-mode:update": (enabled: boolean) => void;
 }
 
 export interface ClientToServerEvents {
-  'queue:add': (track: SpotifyTrack, callback: (err?: string) => void) => void;
-  'queue:vote': (trackId: string, direction: 1 | -1, callback: (err?: string) => void) => void;
+  "queue:add": (track: SpotifyTrack, callback: (err?: string) => void) => void;
+  "queue:vote": (
+    trackId: string,
+    direction: 1 | -1,
+    callback: (err?: string) => void,
+  ) => void;
 }
 
 // ── API Responses ─────────────────────────────────────────────────────────────
