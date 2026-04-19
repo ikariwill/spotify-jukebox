@@ -1,105 +1,148 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import type { SpotifyTrack } from '@jukebox/shared';
-import { useQueueStore } from '../../store/queueStore';
-import { usePlayerStore } from '../../store/playerStore';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mocks = vi.hoisted(() => ({
-  get: vi.fn(),
-  post: vi.fn(),
-  delete: vi.fn(),
-}));
+import { act, renderHook } from '@testing-library/react'
 
-vi.mock('axios', () => ({
-  default: {
-    create: vi.fn(() => ({
-      get: mocks.get,
-      post: mocks.post,
-      delete: mocks.delete,
-    })),
-  },
-}));
+import { usePlayerStore } from '../../store/playerStore'
+import { useQueueStore } from '../../store/queueStore'
+import { useQueue } from '../useQueue'
 
-import { useQueue } from '../useQueue';
+import type { SpotifyTrack } from "@jukebox/shared";
+const mockFetch = vi.fn();
+vi.stubGlobal("fetch", mockFetch);
+
+function mockOk(data: unknown) {
+  mockFetch.mockResolvedValue({
+    ok: true,
+    status: 200,
+    text: () => Promise.resolve(JSON.stringify(data)),
+  });
+}
 
 const makeTrack = (): SpotifyTrack => ({
-  spotifyId: 'spotify-1',
-  uri: 'spotify:track:1',
-  title: 'Track',
-  artist: 'Artist',
-  album: 'Album',
-  albumArt: '',
+  spotifyId: "spotify-1",
+  uri: "spotify:track:1",
+  title: "Track",
+  artist: "Artist",
+  album: "Album",
+  albumArt: "",
   duration: 200000,
 });
 
-describe('useQueue', () => {
+describe("useQueue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useQueueStore.setState({ tracks: [], userStatus: null });
     usePlayerStore.setState({ partyMode: false } as any);
   });
 
-  describe('fetchQueue', () => {
-    it('updates tracks and userStatus from GET /queue', async () => {
-      mocks.get.mockResolvedValue({
-        data: {
-          tracks: [{ id: '1', title: 'Track', votes: 0 }],
-          userStatus: { songsAdded: 1, maxSongs: 3, cooldownRemaining: 0 },
-          partyMode: false,
-        },
+  describe("fetchQueue", () => {
+    it("updates tracks and userStatus from GET /queue", async () => {
+      mockOk({
+        tracks: [{ id: "1", title: "Track", votes: 0 }],
+        userStatus: { songsAdded: 1, maxSongs: 3, cooldownRemaining: 0 },
+        partyMode: false,
       });
       const { result } = renderHook(() => useQueue());
-      await act(async () => { await result.current.fetchQueue(); });
+      await act(async () => {
+        await result.current.fetchQueue();
+      });
       expect(useQueueStore.getState().tracks).toHaveLength(1);
       expect(useQueueStore.getState().userStatus?.songsAdded).toBe(1);
     });
 
-    it('sets partyMode in playerStore from response', async () => {
-      mocks.get.mockResolvedValue({
-        data: { tracks: [], userStatus: { songsAdded: 0, maxSongs: 3, cooldownRemaining: 0 }, partyMode: true },
+    it("sets partyMode in playerStore from response", async () => {
+      mockOk({
+        tracks: [],
+        userStatus: { songsAdded: 0, maxSongs: 3, cooldownRemaining: 0 },
+        partyMode: true,
       });
       const { result } = renderHook(() => useQueue());
-      await act(async () => { await result.current.fetchQueue(); });
+      await act(async () => {
+        await result.current.fetchQueue();
+      });
       expect(usePlayerStore.getState().partyMode).toBe(true);
     });
   });
 
-  describe('addTrack', () => {
-    it('posts to /queue/add and then fetches the updated queue', async () => {
-      mocks.post.mockResolvedValue({ data: {} });
-      mocks.get.mockResolvedValue({
-        data: { tracks: [], userStatus: { songsAdded: 1, maxSongs: 3, cooldownRemaining: 0 }, partyMode: false },
-      });
+  describe("addTrack", () => {
+    it("posts to /queue/add and then fetches the updated queue", async () => {
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 204,
+          text: () => Promise.resolve(""),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: () =>
+            Promise.resolve(
+              JSON.stringify({
+                tracks: [],
+                userStatus: {
+                  songsAdded: 1,
+                  maxSongs: 3,
+                  cooldownRemaining: 0,
+                },
+                partyMode: false,
+              }),
+            ),
+        });
       const { result } = renderHook(() => useQueue());
-      await act(async () => { await result.current.addTrack(makeTrack()); });
-      expect(mocks.post).toHaveBeenCalledWith('/queue/add', makeTrack());
-      expect(mocks.get).toHaveBeenCalledWith('/queue');
+      await act(async () => {
+        await result.current.addTrack(makeTrack());
+      });
+      expect(mockFetch.mock.calls[0][0]).toContain("/queue/add");
+      expect(mockFetch.mock.calls[0][1].method).toBe("POST");
+      expect(mockFetch.mock.calls[1][0]).toContain("/queue");
     });
 
-    it('propagates errors so callers can display feedback', async () => {
-      mocks.post.mockRejectedValue({ response: { data: { error: 'Cooldown active' } } });
+    it("propagates errors so callers can display feedback", async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 429,
+        text: () => Promise.resolve(""),
+      });
       const { result } = renderHook(() => useQueue());
       await expect(
-        act(async () => { await result.current.addTrack(makeTrack()); })
+        act(async () => {
+          await result.current.addTrack(makeTrack());
+        }),
       ).rejects.toBeTruthy();
     });
   });
 
-  describe('vote', () => {
-    it('posts to /queue/:id/vote with the correct direction', async () => {
-      mocks.post.mockResolvedValue({ data: { ok: true } });
+  describe("vote", () => {
+    it("posts to /queue/:id/vote with the correct direction", async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 204,
+        text: () => Promise.resolve(""),
+      });
       const { result } = renderHook(() => useQueue());
-      await act(async () => { await result.current.vote('track-uuid', 1); });
-      expect(mocks.post).toHaveBeenCalledWith('/queue/track-uuid/vote', { direction: 1 });
+      await act(async () => {
+        await result.current.vote("track-uuid", 1);
+      });
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toContain("/queue/track-uuid/vote");
+      expect(JSON.parse(init.body)).toEqual({ direction: 1 });
     });
   });
 
-  describe('removeTrack', () => {
-    it('sends DELETE to /queue/:id', async () => {
-      mocks.delete.mockResolvedValue({ data: { ok: true } });
+  describe("removeTrack", () => {
+    it("sends DELETE to /queue/:id", async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 204,
+        text: () => Promise.resolve(""),
+      });
       const { result } = renderHook(() => useQueue());
-      await act(async () => { await result.current.removeTrack('track-uuid'); });
-      expect(mocks.delete).toHaveBeenCalledWith('/queue/track-uuid');
+      await act(async () => {
+        await result.current.removeTrack("track-uuid");
+      });
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toContain("/queue/track-uuid");
+      expect(init.method).toBe("DELETE");
     });
   });
 });
