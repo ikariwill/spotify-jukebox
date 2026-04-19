@@ -2,28 +2,33 @@
 
 Internal jukebox app: one tablet runs the player, mobile users scan a QR code to add/vote on songs.
 
-## Monorepo (npm workspaces)
+## Monorepo (npm workspaces + Turborepo)
 
 ```
 spotify-jukebox/
+├── turbo.json  Turborepo pipeline (build, dev, test, lint)
 ├── shared/     TypeScript types shared by backend and frontend
 ├── backend/    Express + Socket.IO (port 3001)
 └── frontend/   Next.js 14 App Router (port 3000)
 ```
 
 **Always run `npm install` from the root**, never inside a sub-package.  
-After changing `shared/types/index.ts`, run `npm run build --workspace=shared`.
+After changing `shared/types/index.ts`, run `npm run build` (Turborepo rebuilds dependents automatically).
 
 ## Commands
 
 ```bash
-npm run dev                          # start both servers
-npm run test                         # run all unit tests
-npm run test --workspace=backend     # backend only
-npm run test --workspace=frontend    # frontend only
+npm run dev                                              # start both servers (parallel, no cache)
+npm run build                                            # shared → backend → frontend (cached)
+npm run test                                             # run all unit tests (cached)
+npm run test:coverage                                    # coverage for all packages (cached)
+npm run lint                                             # lint all packages
+
+# Single package (bypass turbo, run vitest directly)
+npm run test --workspace=backend
+npm run test --workspace=frontend
 npm run test:coverage --workspace=backend
 npm run test:coverage --workspace=frontend
-npm run build                        # shared → backend → frontend
 ```
 
 ## Path aliases
