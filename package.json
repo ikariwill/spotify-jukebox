@@ -7,12 +7,13 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
-    "build": "npm run build --workspace=shared && npm run build --workspace=backend && npm run build --workspace=frontend",
-    "lint": "npm run lint --workspace=frontend",
-    "test": "npm run test --workspace=backend --workspace=frontend"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "lint": "turbo run lint"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "turbo": "^2.1.0"
   }
 }
