@@ -10,7 +10,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@jukebox/shared": "*",
+    "@jukebox/shared": "workspace:*",
     "axios": "^1.6.7",
     "connect-redis": "^7.1.0",
     "cors": "^2.8.5",

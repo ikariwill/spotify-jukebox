@@ -1,11 +1,7 @@
 {
   "name": "spotify-jukebox",
   "private": true,
-  "workspaces": [
-    "shared",
-    "backend",
-    "frontend"
-  ],
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -15,5 +11,8 @@
   },
   "devDependencies": {
     "turbo": "^2.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }
