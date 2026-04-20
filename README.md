@@ -11,46 +11,80 @@ A full-stack internal jukebox app. The tablet runs the player; anyone who scans 
 
 ## Prerequisites
 
-- Node.js 24 LTS
+- Node.js 24 LTS (local dev only)
+- Docker + Docker Compose (recommended)
 - A **Spotify Premium** account (required for Web Playback SDK)
 - A Spotify Developer App — create one at [developer.spotify.com](https://developer.spotify.com/dashboard)
 
 ## Quick Start
 
-### 1. Clone and install
+> **Important:** Always use `http://127.0.0.1` instead of `http://localhost`. Spotify's OAuth redirect policy requires it — Chrome blocks session cookies on `localhost` OAuth redirects, causing "Invalid state or missing code" errors.
 
-```bash
-git clone <repo-url>
-cd spotify-jukebox
-pnpm install
-```
-
-### 2. Create a Spotify App
+### 1. Create a Spotify App
 
 1. Go to [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard)
 2. Create a new app
 3. Add `http://127.0.0.1:3001/auth/callback` to **Redirect URIs**
 4. Copy your **Client ID** and **Client Secret**
 
-> **Important:** Spotify's OAuth policy in development requires `http://127.0.0.1` instead of `http://localhost`. Using `localhost` will cause "Invalid state or missing code" errors due to Chrome's cross-site cookie policy blocking session cookies on OAuth redirects. Always use `127.0.0.1` in all URLs during local development.
-
-### 3. Configure environment
+### 2. Configure the backend environment
 
 ```bash
-# Backend
 cp backend/.env.example backend/.env
-# Edit backend/.env and fill in:
-#   SPOTIFY_CLIENT_ID=
-#   SPOTIFY_CLIENT_SECRET=
-#   SESSION_SECRET=<any long random string>
-# All other values have working defaults for local development
-
-# Frontend
-cp frontend/.env.example frontend/.env.local
-# Edit frontend/.env.local:
-#   NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:3001
-#   NEXT_PUBLIC_SOCKET_URL=http://127.0.0.1:3001
+# Fill in SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SESSION_SECRET
 ```
+
+---
+
+## Running with Docker (recommended)
+
+Includes Redis, backend and frontend — no local Node.js required.
+
+```bash
+git clone <repo-url>
+cd spotify-jukebox
+docker compose up -d
+```
+
+- Frontend: [http://127.0.0.1:3000](http://127.0.0.1:3000)
+- Backend: [http://127.0.0.1:3001](http://127.0.0.1:3001)
+
+Open `http://127.0.0.1:3000`, click **"Login with Spotify"** and complete the OAuth flow.
+
+> Redis data (sessions, queue, history) is persisted in a Docker volume and survives container restarts.
+
+### Rebuilding after code changes
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+---
+
+## Running locally (dev mode)
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Configure frontend environment
+
+```bash
+cp frontend/.env.example frontend/.env.local
+# NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:3001
+# NEXT_PUBLIC_SOCKET_URL=http://127.0.0.1:3001
+```
+
+### 3. Start Redis (optional, for persistence)
+
+```bash
+docker compose up -d redis
+```
+
+Or run Redis locally and set `REDIS_URL=redis://localhost:6379` in `backend/.env`.
 
 ### 4. Run
 
@@ -63,12 +97,7 @@ This starts both servers concurrently:
 - Frontend: [http://127.0.0.1:3000](http://127.0.0.1:3000)
 - Backend: [http://127.0.0.1:3001](http://127.0.0.1:3001)
 
-### 5. Authenticate
-
-Open `http://127.0.0.1:3000` — you'll be redirected to `/player`.  
-Click **"Login with Spotify"** and complete the OAuth flow.
-
-The tablet is now the active player.
+Open `http://127.0.0.1:3000` and click **"Login with Spotify"**.
 
 ## Usage
 
@@ -121,7 +150,8 @@ The tablet is now the active player.
 | `FRONTEND_URL`          | `http://127.0.0.1:3000`               | Used for CORS and OAuth redirects — **use `127.0.0.1`**       |
 | `MAX_SONGS_PER_USER`    | `3`                                   | Max songs a user can add per session                          |
 | `COOLDOWN_MS`           | `30000`                               | Cooldown between submissions (ms)                             |
-| `REDIS_URL`             | _(empty)_                             | Optional Redis URL for session persistence                    |
+| `REDIS_URL`             | _(empty)_                             | Redis URL — set to `redis://localhost:6379` for local dev     |
+| `COOKIE_SECURE`         | `false`                               | Set to `true` only when running behind HTTPS                  |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -132,11 +162,7 @@ The tablet is now the active player.
 
 ## Docker
 
-```bash
-docker compose up -d
-```
-
-Starts Redis, backend and frontend. Redis data is persisted in a Docker volume.
+See [Running with Docker](#running-with-docker-recommended) above.
 
 ## Production Notes
 
