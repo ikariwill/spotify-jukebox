@@ -1,11 +1,104 @@
 "use client";
 
 import { Pause, Play, SkipBack, SkipForward, Volume1, Volume2 } from 'lucide-react'
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { useSpotifyPlayerRef } from '@/hooks/useSpotifyPlayer'
 import { api } from '@/lib/api'
 import { usePlayerStore } from '@/store/playerStore'
+
+function VolumeSlider({ volume, onChange }: { volume: number; onChange: (v: number) => void }) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const [dragPct, setDragPct] = useState(0);
+  const [hoverPct, setHoverPct] = useState<number | null>(null);
+
+  const playbackPct = Math.min(Math.max(volume, 0), 100);
+  const displayPct = dragging ? dragPct : playbackPct;
+
+  const pctFromEvent = useCallback((e: MouseEvent | React.MouseEvent) => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect) return 0;
+    return Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1) * 100;
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    setHoverPct(pctFromEvent(e));
+  }, [pctFromEvent]);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoverPct(null);
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const pct = pctFromEvent(e);
+    setDragging(true);
+    setDragPct(pct);
+    setHoverPct(null);
+    onChange(Math.round(pct));
+
+    const onMove = (ev: MouseEvent) => {
+      const p = pctFromEvent(ev);
+      setDragPct(p);
+      onChange(Math.round(p));
+    };
+    const onUp = (ev: MouseEvent) => {
+      const finalPct = pctFromEvent(ev);
+      setDragging(false);
+      onChange(Math.round(finalPct));
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [pctFromEvent, onChange]);
+
+  const isInteracting = hoverPct !== null || dragging;
+  const tooltipPct = dragging ? dragPct : hoverPct;
+
+  return (
+    <div
+      ref={trackRef}
+      className="relative flex items-center h-4 flex-1 cursor-pointer group"
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    >
+      <div className="relative w-full h-1.5 bg-[#4d4c4d] rounded-full overflow-hidden">
+        {/* White layer: extends to hover or playback */}
+        <div
+          className="absolute inset-y-0 left-0 bg-white"
+          style={{ width: `${isInteracting ? (hoverPct ?? playbackPct) : playbackPct}%` }}
+        />
+        {/* Green layer: covers 0..playback, visible on hover/drag */}
+        <div
+          className="absolute inset-y-0 left-0 bg-spotify-green"
+          style={{
+            width: dragging ? `${dragPct}%` : `${playbackPct}%`,
+            opacity: isInteracting ? 1 : 0,
+          }}
+        />
+      </div>
+
+      {/* Thumb */}
+      <div
+        className="absolute w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+        style={{ left: `${displayPct}%`, transform: 'translateX(-50%)' }}
+      />
+
+      {/* Tooltip */}
+      {tooltipPct !== null && (
+        <div
+          className="absolute -top-7 px-1.5 py-0.5 bg-neutral-800 text-white text-xs rounded pointer-events-none whitespace-nowrap"
+          style={{ left: `${tooltipPct}%`, transform: 'translateX(-50%)' }}
+        >
+          {Math.round(tooltipPct)}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Controls() {
   const isPlaying = usePlayerStore((s) => s.isPlaying);
@@ -71,15 +164,7 @@ export function Controls() {
 
       <div className="flex items-center gap-3 w-full max-w-xs">
         <Volume1 size={16} className="text-gray-500 shrink-0" />
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={volume ?? 50}
-          onChange={(e) => handleVolume(Number(e.target.value))}
-          className="flex-1 accent-spotify-green"
-          aria-label="Volume"
-        />
+        <VolumeSlider volume={volume ?? 50} onChange={handleVolume} />
         <Volume2 size={16} className="text-gray-500 shrink-0" />
       </div>
     </div>
