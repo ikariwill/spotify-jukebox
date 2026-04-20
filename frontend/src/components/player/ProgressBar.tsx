@@ -94,7 +94,7 @@ export function ProgressBar() {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div className="relative w-full h-1.5 bg-[#535353] rounded-full overflow-hidden">
           <div
             className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
             style={{
