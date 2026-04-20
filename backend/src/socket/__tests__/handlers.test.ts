@@ -110,4 +110,28 @@ describe('registerSocketHandlers', () => {
       expect(cb).toHaveBeenCalledWith('Track not found');
     });
   });
+
+  describe('sessionId fallback', () => {
+    it('uses socket.id when session is undefined', () => {
+      const noSessionSocket = { ...makeSocket(), request: {} };
+      noSessionSocket.id = 'socket-fallback-id';
+      const fallbackIo = makeIo(noSessionSocket as any);
+      registerSocketHandlers(fallbackIo as any, queue as QueueService);
+
+      const handler = (noSessionSocket.on as ReturnType<typeof vi.fn>).mock.calls.find(
+        ([e]) => e === 'queue:vote'
+      )?.[1];
+      const cb = vi.fn();
+      handler?.('track-id', 1, cb);
+      expect(queue.vote).toHaveBeenCalledWith('track-id', 'socket-fallback-id', 1);
+    });
+  });
+
+  describe('disconnect', () => {
+    it('registers a disconnect handler without throwing', () => {
+      const handler = getHandler(socket, 'disconnect');
+      expect(handler).toBeDefined();
+      expect(() => handler!()).not.toThrow();
+    });
+  });
 });
