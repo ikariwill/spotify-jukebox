@@ -55,13 +55,14 @@ describe('QueuePreview', () => {
     expect(screen.getByText('-2')).toBeInTheDocument();
   });
 
-  it('renders at most 6 tracks', () => {
+  it('renders all tracks in the queue', () => {
     const tracks = Array.from({ length: 10 }, (_, i) =>
       makeTrack({ id: `id-${i}`, spotifyId: `sp-${i}`, title: `Song ${i}` })
     );
     useQueueStore.setState({ tracks });
     render(<QueuePreview />);
-    const items = screen.getAllByRole('listitem');
-    expect(items).toHaveLength(6);
+    for (let i = 0; i < 10; i++) {
+      expect(screen.getByText(`Song ${i}`)).toBeInTheDocument();
+    }
   });
 });

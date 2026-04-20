@@ -196,6 +196,45 @@ describe("QueueService", () => {
     });
   });
 
+  // ── reorder ─────────────────────────────────────────────────────────────────
+
+  describe("reorder", () => {
+    it("moves a track from one index to another", () => {
+      service.addTrack(makeTrack({ spotifyId: "a" }), "s1");
+      vi.advanceTimersByTime(1);
+      service.addTrack(makeTrack({ spotifyId: "b" }), "s1");
+      vi.advanceTimersByTime(1);
+      service.addTrack(makeTrack({ spotifyId: "c" }), "s1");
+
+      service.reorder(2, 0);
+
+      const ids = service.getQueue().map((t) => t.spotifyId);
+      expect(ids).toEqual(["c", "a", "b"]);
+    });
+
+    it("returns true on a valid reorder", () => {
+      service.addTrack(makeTrack({ spotifyId: "a" }), "s1");
+      vi.advanceTimersByTime(1);
+      service.addTrack(makeTrack({ spotifyId: "b" }), "s1");
+      expect(service.reorder(0, 1)).toBe(true);
+    });
+
+    it("returns false when fromIndex equals toIndex", () => {
+      service.addTrack(makeTrack(), "s1");
+      expect(service.reorder(0, 0)).toBe(false);
+    });
+
+    it("returns false for out-of-bounds indices", () => {
+      service.addTrack(makeTrack(), "s1");
+      expect(service.reorder(0, 5)).toBe(false);
+      expect(service.reorder(-1, 0)).toBe(false);
+    });
+
+    it("returns false on an empty queue", () => {
+      expect(service.reorder(0, 1)).toBe(false);
+    });
+  });
+
   // ── isEmpty ─────────────────────────────────────────────────────────────────
 
   describe("isEmpty", () => {

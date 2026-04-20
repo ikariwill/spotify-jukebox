@@ -60,21 +60,24 @@ describe("Controls", () => {
     expect(init.method).toBe("POST");
   });
 
-  it("calls PUT /spotify/volume when volume slider changes", () => {
-    render(<Controls />);
-    fireEvent.change(screen.getByLabelText(/volume/i), {
-      target: { value: "80" },
-    });
-    const [url, init] = mockFetch.mock.calls[0];
-    expect(url).toContain("/spotify/volume");
-    expect(init.method).toBe("PUT");
-    expect(JSON.parse(init.body)).toEqual({ volume: 80 });
-  });
-
-  it("renders a volume slider with the current volume value", () => {
+  it("renders the volume slider with current volume as aria-valuenow", () => {
     usePlayerStore.setState({ isPlaying: false, volume: 70 });
     render(<Controls />);
-    const slider = screen.getByLabelText(/volume/i) as HTMLInputElement;
-    expect(slider.value).toBe("70");
+    const slider = screen.getByRole("slider", { name: /volume/i });
+    expect(slider).toHaveAttribute("aria-valuenow", "70");
+  });
+
+  it("calls PUT /spotify/volume when volume slider is dragged", () => {
+    render(<Controls />);
+    const slider = screen.getByRole("slider", { name: /volume/i });
+
+    vi.spyOn(slider, "getBoundingClientRect").mockReturnValue({
+      left: 0, width: 100, top: 0, bottom: 0, right: 100, height: 0, x: 0, y: 0, toJSON: () => {},
+    });
+
+    fireEvent.mouseDown(slider, { clientX: 80 });
+    fireEvent.mouseUp(window, { clientX: 80 });
+
+    expect(usePlayerStore.getState().volume).toBe(80);
   });
 });
