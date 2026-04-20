@@ -1,0 +1,102 @@
+[
+  {
+    "id": "pop",
+    "name": "Pop",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5ebe2e8e7ff002a4afda1c7147e"
+  },
+  {
+    "id": "rock",
+    "name": "Rock",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb1db35bc9c01d2b1c151e44ce"
+  },
+  {
+    "id": "hip-hop",
+    "name": "Hip-Hop",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb39ba6dcd4355c03de0b50918"
+  },
+  {
+    "id": "electronic",
+    "name": "Electronic",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5ebd3aa7cc0e419b6c459b08e8e"
+  },
+  {
+    "id": "r-b",
+    "name": "R&B",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5ebc1719ac9e6a75c1c25835018"
+  },
+  {
+    "id": "latin",
+    "name": "Latin",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb81f47f44084e0a09b5f0fa13"
+  },
+  {
+    "id": "indie",
+    "name": "Indie",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb7da39dea0a72f581535fb11f"
+  },
+  {
+    "id": "jazz",
+    "name": "Jazz",
+    "imageUrl": "https://i.scdn.co/image/ab6772690000c46c12f90798134ecfe8dcb99db6"
+  },
+  {
+    "id": "classical",
+    "name": "Classical",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eba636b0b244253f602a629796"
+  },
+  {
+    "id": "metal",
+    "name": "Metal",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb69ca98dd3083f1082d740e44"
+  },
+  {
+    "id": "reggae",
+    "name": "Reggae",
+    "imageUrl": "https://i.scdn.co/image/b5aae2067db80f694a980e596e7f49618c1206c9"
+  },
+  {
+    "id": "country",
+    "name": "Country",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb94a8326675bfcafb20f0a235"
+  },
+  {
+    "id": "blues",
+    "name": "Blues",
+    "imageUrl": "https://i.scdn.co/image/ffb3ff26238fe635a230bb0feb59dd0a5b209b6f"
+  },
+  {
+    "id": "soul",
+    "name": "Soul",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5ebf12270128127ba170f90097d"
+  },
+  {
+    "id": "funk",
+    "name": "Funk",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb7ad860b3610316cfbe994eab"
+  },
+  {
+    "id": "punk",
+    "name": "Punk",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb2fc4d22f2e060511db2ae971"
+  },
+  {
+    "id": "sertanejo",
+    "name": "Sertanejo",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb29362b75d7fa1a411ecaeaf9"
+  },
+  {
+    "id": "pagode",
+    "name": "Pagode",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5eb9fc2972fa75211f392bc71d5"
+  },
+  {
+    "id": "samba",
+    "name": "Samba",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5ebc2523529fb46fb0697fa6b9c"
+  },
+  {
+    "id": "mpb",
+    "name": "MPB",
+    "imageUrl": "https://i.scdn.co/image/ab6761610000e5ebcffb538293045411d2b51b8a"
+  }
+]

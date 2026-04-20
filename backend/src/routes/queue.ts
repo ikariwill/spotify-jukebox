@@ -50,6 +50,16 @@ queueRouter.post("/:id/vote", (req, res) => {
   res.json({ ok: true });
 });
 
+queueRouter.get("/history", (req, res) => {
+  res.json({ tracks: queueService.getRecentlyPlayed() });
+});
+
+queueRouter.delete("/clear", (req, res) => {
+  queueService.clearQueue();
+  io.emit("queue:update", queueService.getQueue());
+  res.json({ ok: true });
+});
+
 queueRouter.delete("/:id", (req, res) => {
   const success = queueService.remove(req.params.id);
   if (!success) {

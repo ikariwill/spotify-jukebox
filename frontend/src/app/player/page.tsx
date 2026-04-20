@@ -5,10 +5,10 @@ import { useEffect, useState } from 'react'
 
 import { Controls } from '@/components/player/Controls'
 import { NowPlaying } from '@/components/player/NowPlaying'
-import { PlayerSearch } from '@/components/player/PlayerSearch'
 import { ProgressBar } from '@/components/player/ProgressBar'
 import { QRCodeDisplay } from '@/components/player/QRCodeDisplay'
 import { QueuePreview } from '@/components/player/QueuePreview'
+import { TopSearchBar } from '@/components/player/TopSearchBar'
 import { useSocket } from '@/hooks/useSocket'
 import { useSpotifyPlayer } from '@/hooks/useSpotifyPlayer'
 import { api } from '@/lib/api'
@@ -95,51 +95,56 @@ export default function PlayerPage() {
   }
 
   return (
-    <div className="h-screen bg-spotify-dark flex overflow-hidden">
-      {/* Left panel — now playing + controls */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8 p-10 lg:p-14">
-        <NowPlaying />
-        <div className="w-full max-w-sm space-y-5">
-          <ProgressBar />
-          <Controls />
+    <div className="h-screen bg-spotify-dark flex flex-col overflow-hidden">
+      {/* Top bar — search */}
+      <div className="flex-none border-b border-white/5 bg-black/30 z-40 flex">
+        <div className="flex-1 flex items-center justify-center px-6 py-3">
+          <TopSearchBar />
         </div>
-
-        {/* Party Mode + Stats links */}
-        <div className="flex items-center gap-6 mt-2">
-          <button
-            onClick={togglePartyMode}
-            className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
-              partyMode
-                ? "bg-yellow-400 text-black border-yellow-400"
-                : "border-white/20 text-gray-400 hover:border-white/40 hover:text-white"
-            }`}
-          >
-            <PartyPopper size={15} />
-            Party Mode {partyMode ? "ON" : "OFF"}
-          </button>
-          <a
-            href="/stats"
-            className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors"
-          >
-            <BarChart2 size={15} />
-            Stats
-          </a>
-        </div>
+        <div className="w-72 xl:w-80 shrink-0" />
       </div>
 
-      {/* Right panel — queue + search + QR code */}
-      <div className="w-72 xl:w-80 h-screen flex flex-col border-l border-white/5 bg-black/20">
-        {/* Queue — fixed portion, scrolls internally */}
-        <div className="flex-none p-6 pb-0 min-h-0 max-h-[40%] flex flex-col">
-          <QueuePreview />
+      {/* Main area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left panel — now playing + controls */}
+        <div className="flex-1 flex flex-col items-center justify-center gap-8 p-10 lg:p-14">
+          <NowPlaying />
+          <div className="w-full max-w-sm space-y-5">
+            <ProgressBar />
+            <Controls />
+          </div>
+
+          {/* Party Mode + Stats links */}
+          <div className="flex items-center gap-6 mt-2">
+            <button
+              onClick={togglePartyMode}
+              className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full border transition-colors ${
+                partyMode
+                  ? "bg-yellow-400 text-black border-yellow-400"
+                  : "border-white/20 text-gray-400 hover:border-white/40 hover:text-white"
+              }`}
+            >
+              <PartyPopper size={15} />
+              Party Mode {partyMode ? "ON" : "OFF"}
+            </button>
+            <a
+              href="/stats"
+              className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-400 transition-colors"
+            >
+              <BarChart2 size={15} />
+              Stats
+            </a>
+          </div>
         </div>
-        {/* Search — takes remaining space, results scroll inside */}
-        <div className="flex-1 min-h-0 flex flex-col border-t border-white/5 p-6 pt-4">
-          <PlayerSearch />
-        </div>
-        {/* QR code — pinned to bottom */}
-        <div className="flex-none border-t border-white/5 p-6 pt-4">
-          <QRCodeDisplay url={remoteUrl} />
+
+        {/* Right panel — queue + QR code */}
+        <div className="w-72 xl:w-80 h-full flex flex-col border-l border-white/5 bg-black/20">
+          <div className="flex-1 min-h-0 p-6 pb-0 flex flex-col">
+            <QueuePreview />
+          </div>
+          <div className="flex-none border-t border-white/5 p-6 pt-4">
+            <QRCodeDisplay url={remoteUrl} />
+          </div>
         </div>
       </div>
     </div>
