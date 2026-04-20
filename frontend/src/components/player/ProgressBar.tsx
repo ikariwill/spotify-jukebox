@@ -22,13 +22,6 @@ export function ProgressBar() {
   const [dragging, setDragging] = useState(false);
   const [dragPct, setDragPct] = useState(0);
   const [hoverPct, setHoverPct] = useState<number | null>(null);
-  const [skipTransition, setSkipTransition] = useState(false);
-  const prevTrackId = useRef<string | null>(null);
-
-  const suppressTransition = (flag: boolean) => {
-    setSkipTransition(flag);
-    if (flag) requestAnimationFrame(() => setSkipTransition(false));
-  };
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -36,19 +29,8 @@ export function ProgressBar() {
     return () => clearInterval(id);
   }, [isPlaying, tick]);
 
-  useEffect(() => {
-    const currentId = nowPlaying?.spotifyId ?? null;
-    if (currentId !== prevTrackId.current) {
-      prevTrackId.current = currentId;
-      setSkipTransition(true);
-      const id = setTimeout(() => setSkipTransition(false), 50);
-      return () => clearTimeout(id);
-    }
-  }, [nowPlaying?.spotifyId]);
-
   const duration = nowPlaying?.duration ?? 1;
   const playbackPct = Math.min((progress / duration) * 100, 100);
-  // Fill and thumb follow drag; on hover they stay at playback position
   const displayPct = dragging ? dragPct : playbackPct;
 
   const pctFromEvent = useCallback((e: MouseEvent | React.MouseEvent) => {
@@ -68,7 +50,6 @@ export function ProgressBar() {
   }, [pctFromEvent]);
 
   const handleMouseLeave = useCallback(() => {
-    suppressTransition(true);
     setHoverPct(null);
   }, []);
 
@@ -104,29 +85,25 @@ export function ProgressBar() {
           {/* White layer: extends to hover position (or playback when not hovering) */}
           <div
             className="absolute inset-y-0 left-0 bg-white"
-            style={{
-              width: dragging ? `${dragPct}%` : `${hoverPct ?? playbackPct}%`,
-              transition: (!dragging && hoverPct === null && !skipTransition) ? 'width 1s linear' : 'none',
-            }}
+            style={{ width: dragging ? `${dragPct}%` : `${hoverPct ?? playbackPct}%` }}
           />
-          {/* Green layer: always covers 0..playback, only visible on hover/drag */}
+          {/* Green layer: covers 0..playback, visible only on hover/drag */}
           <div
             className="absolute inset-y-0 left-0 bg-spotify-green"
             style={{
               width: dragging ? `${dragPct}%` : `${playbackPct}%`,
               opacity: (hoverPct !== null || dragging) ? 1 : 0,
-              transition: 'none',
             }}
           />
         </div>
 
-        {/* Thumb — stays at playback/drag position, not hover */}
+        {/* Thumb */}
         <div
           className="absolute w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
           style={{ left: `${displayPct}%`, transform: 'translateX(-50%)' }}
         />
 
-        {/* Tooltip — follows mouse on hover, follows thumb on drag */}
+        {/* Tooltip */}
         {(hoverPct !== null || dragging) && (
           <div
             className="absolute -top-7 px-1.5 py-0.5 bg-neutral-800 text-white text-xs rounded pointer-events-none whitespace-nowrap"
