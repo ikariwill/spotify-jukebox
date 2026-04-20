@@ -20,8 +20,8 @@ export function ProgressBar() {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [dragPct, setDragPct] = useState(0);
   const [hoverPct, setHoverPct] = useState<number | null>(null);
-  const [activePct, setActivePct] = useState(0);
   const [skipTransition, setSkipTransition] = useState(false);
   const prevTrackId = useRef<string | null>(null);
 
@@ -43,8 +43,8 @@ export function ProgressBar() {
 
   const duration = nowPlaying?.duration ?? 1;
   const playbackPct = Math.min((progress / duration) * 100, 100);
-  // During interaction show the drag/hover position, otherwise playback
-  const displayPct = dragging ? activePct : (hoverPct ?? playbackPct);
+  // Fill and thumb follow drag; on hover they stay at playback position
+  const displayPct = dragging ? dragPct : playbackPct;
 
   const pctFromEvent = useCallback((e: MouseEvent | React.MouseEvent) => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -59,21 +59,21 @@ export function ProgressBar() {
   }, [duration, setProgress]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging) setHoverPct(pctFromEvent(e));
-  }, [dragging, pctFromEvent]);
+    setHoverPct(pctFromEvent(e));
+  }, [pctFromEvent]);
 
   const handleMouseLeave = useCallback(() => {
-    if (!dragging) setHoverPct(null);
-  }, [dragging]);
+    setHoverPct(null);
+  }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const pct = pctFromEvent(e);
     setDragging(true);
-    setActivePct(pct);
+    setDragPct(pct);
     setHoverPct(null);
 
-    const onMove = (ev: MouseEvent) => setActivePct(pctFromEvent(ev));
+    const onMove = (ev: MouseEvent) => setDragPct(pctFromEvent(ev));
     const onUp = (ev: MouseEvent) => {
       const finalPct = pctFromEvent(ev);
       setDragging(false);
@@ -84,9 +84,6 @@ export function ProgressBar() {
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }, [pctFromEvent, seek]);
-
-  const isInteracting = dragging || hoverPct !== null;
-  const tooltipMs = Math.round((displayPct / 100) * duration);
 
   return (
     <div className="w-full">
@@ -101,25 +98,28 @@ export function ProgressBar() {
           <div
             className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
             style={{
-              width: `${isInteracting ? displayPct : playbackPct}%`,
-              transition: (dragging || skipTransition || hoverPct !== null) ? 'none' : 'width 1s linear',
+              width: `${displayPct}%`,
+              transition: (dragging || skipTransition) ? 'none' : 'width 1s linear',
             }}
           />
         </div>
 
-        {/* Thumb */}
+        {/* Thumb — stays at playback/drag position, not hover */}
         <div
           className="absolute w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
           style={{ left: `${displayPct}%`, transform: 'translateX(-50%)' }}
         />
 
-        {/* Time tooltip */}
-        {isInteracting && (
+        {/* Tooltip — follows mouse on hover, follows thumb on drag */}
+        {(hoverPct !== null || dragging) && (
           <div
-            className="absolute -top-7 px-1.5 py-0.5 bg-neutral-800 text-white text-xs rounded pointer-events-none"
-            style={{ left: `${displayPct}%`, transform: 'translateX(-50%)' }}
+            className="absolute -top-7 px-1.5 py-0.5 bg-neutral-800 text-white text-xs rounded pointer-events-none whitespace-nowrap"
+            style={{
+              left: `${dragging ? dragPct : hoverPct!}%`,
+              transform: 'translateX(-50%)',
+            }}
           >
-            {formatMs(tooltipMs)}
+            {formatMs(Math.round(((dragging ? dragPct : hoverPct!) / 100) * duration))}
           </div>
         )}
       </div>
