@@ -92,9 +92,9 @@ async function start() {
     saveUninitialized: true,
     cookie: {
       httpOnly: true,
-      sameSite: process.env.NODE_ENV === "production" ? "none" : false,
+      sameSite: process.env.COOKIE_SECURE === "true" ? "none" : false,
       maxAge: config.session.maxAge,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.COOKIE_SECURE === "true",
     },
   });
 
