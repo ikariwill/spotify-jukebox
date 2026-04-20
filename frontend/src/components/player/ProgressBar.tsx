@@ -25,6 +25,11 @@ export function ProgressBar() {
   const [skipTransition, setSkipTransition] = useState(false);
   const prevTrackId = useRef<string | null>(null);
 
+  const suppressTransition = (flag: boolean) => {
+    setSkipTransition(flag);
+    if (flag) requestAnimationFrame(() => setSkipTransition(false));
+  };
+
   useEffect(() => {
     if (!isPlaying) return;
     const id = setInterval(tick, 1000);
@@ -63,6 +68,7 @@ export function ProgressBar() {
   }, [pctFromEvent]);
 
   const handleMouseLeave = useCallback(() => {
+    suppressTransition(true);
     setHoverPct(null);
   }, []);
 
