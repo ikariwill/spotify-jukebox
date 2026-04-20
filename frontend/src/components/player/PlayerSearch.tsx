@@ -1,17 +1,20 @@
 "use client";
 
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
-import { useQueue } from '@/hooks/useQueue'
 import { SearchBar } from '@/components/remote/SearchBar'
 import { TrackList } from '@/components/remote/TrackList'
-import type { SpotifyTrack } from '@jukebox/shared'
+import { useQueue } from '@/hooks/useQueue'
+
+import type { SpotifyTrack } from "@jukebox/shared";
 
 export function PlayerSearch() {
   const { addTrack } = useQueue();
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(
+    null,
+  );
   const [addingId, setAddingId] = useState<string | null>(null);
 
   const showFeedback = (msg: string, ok: boolean) => {
@@ -26,7 +29,7 @@ export function PlayerSearch() {
         await addTrack(track);
         showFeedback(`"${track.title}" added!`, true);
       } catch (err: any) {
-        showFeedback(err.message ?? 'Failed to add track', false);
+        showFeedback(err.message ?? "Failed to add track", false);
       } finally {
         setAddingId(null);
       }
@@ -35,32 +38,32 @@ export function PlayerSearch() {
   );
 
   return (
-    <div className="flex flex-col gap-2 min-h-0">
+    <div className="flex-1 min-h-0 flex flex-col gap-2">
       <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
         Add Song
       </h2>
       <SearchBar onResults={setSearchResults} onLoading={setSearchLoading} />
-      {feedback && (
-        <div
-          className={`rounded-lg px-3 py-2 text-xs text-center ${
-            feedback.ok
-              ? 'bg-spotify-green/20 text-spotify-green'
-              : 'bg-red-500/20 text-red-400'
-          }`}
-        >
-          {feedback.msg}
-        </div>
-      )}
-      {searchResults.length > 0 && (
-        <div className="overflow-y-auto flex-1 -mx-1">
-          <TrackList
-            tracks={searchResults}
-            onAdd={handleAdd}
-            loading={searchLoading}
-            addingId={addingId}
-          />
-        </div>
-      )}
+      <div className="h-8 shrink-0 flex items-center">
+        {feedback && (
+          <div
+            className={`w-full rounded-lg px-3 py-1.5 text-xs text-center ${
+              feedback.ok
+                ? "bg-spotify-green/20 text-spotify-green"
+                : "bg-red-500/20 text-red-400"
+            }`}
+          >
+            {feedback.msg}
+          </div>
+        )}
+      </div>
+      <div className="overflow-y-auto flex-1 min-h-0 -mx-1">
+        <TrackList
+          tracks={searchResults}
+          onAdd={handleAdd}
+          loading={searchLoading}
+          addingId={addingId}
+        />
+      </div>
     </div>
   );
 }
