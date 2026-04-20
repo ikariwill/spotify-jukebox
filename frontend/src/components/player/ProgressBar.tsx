@@ -21,12 +21,24 @@ export function ProgressBar() {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [dragPct, setDragPct] = useState(0);
+  const [skipTransition, setSkipTransition] = useState(false);
+  const prevTrackId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isPlaying) return;
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [isPlaying, tick]);
+
+  useEffect(() => {
+    const currentId = nowPlaying?.spotifyId ?? null;
+    if (currentId !== prevTrackId.current) {
+      prevTrackId.current = currentId;
+      setSkipTransition(true);
+      const id = setTimeout(() => setSkipTransition(false), 50);
+      return () => clearTimeout(id);
+    }
+  }, [nowPlaying?.spotifyId]);
 
   const duration = nowPlaying?.duration ?? 1;
   const displayPct = dragging ? dragPct : Math.min((progress / duration) * 100, 100);
@@ -73,7 +85,7 @@ export function ProgressBar() {
         <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
           <div
             className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
-            style={{ width: `${displayPct}%`, transition: dragging ? 'none' : 'width 1s linear' }}
+            style={{ width: `${displayPct}%`, transition: (dragging || skipTransition) ? 'none' : 'width 1s linear' }}
           />
         </div>
         <div
