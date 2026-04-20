@@ -27,6 +27,7 @@ export function useSpotifyPlayer() {
   const playerRef = useRef<any>(null);
   const setNowPlaying = usePlayerStore((s) => s.setNowPlaying);
   const setPlayerState = usePlayerStore((s) => s.setPlayerState);
+  const lastTrackIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -51,6 +52,24 @@ export function useSpotifyPlayer() {
       player.addListener("player_state_changed", (state: any) => {
         if (!state) return;
         const track = state.track_window.current_track;
+
+        // Detect track end: paused at position 0 after a different track was playing
+        const trackEnded =
+          state.paused &&
+          state.position === 0 &&
+          lastTrackIdRef.current !== null &&
+          lastTrackIdRef.current === track.id;
+
+        lastTrackIdRef.current = track.id;
+
+        if (trackEnded) {
+          fetch(`${BACKEND_URL}/spotify/skip`, {
+            method: "POST",
+            credentials: "include",
+          }).catch(console.error);
+          return;
+        }
+
         setNowPlaying({
           spotifyId: track.id,
           title: track.name,
