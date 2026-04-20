@@ -67,16 +67,18 @@ export function ProgressBar() {
     <div className="w-full">
       <div
         ref={trackRef}
-        className="relative h-1.5 bg-white/10 rounded-full cursor-pointer group"
+        className="relative flex items-center h-4 cursor-pointer group"
         onMouseDown={handleMouseDown}
       >
+        <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
+            style={{ width: `${displayPct}%`, transition: dragging ? 'none' : 'width 1s linear' }}
+          />
+        </div>
         <div
-          className="absolute inset-y-0 left-0 bg-spotify-green rounded-full transition-all duration-1000 group-active:duration-0"
-          style={{ width: `${displayPct}%`, transition: dragging ? 'none' : undefined }}
-        />
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-          style={{ left: `${displayPct}%`, transform: 'translate(-50%, -50%)' }}
+          className="absolute w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+          style={{ left: `${displayPct}%`, transform: 'translateX(-50%)' }}
         />
       </div>
       <div className="flex justify-between text-xs text-gray-500 mt-1.5">
