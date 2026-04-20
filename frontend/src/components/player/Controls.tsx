@@ -60,6 +60,11 @@ function VolumeSlider({ volume, onChange }: { volume: number; onChange: (v: numb
   return (
     <div
       ref={trackRef}
+      role="slider"
+      aria-label="Volume"
+      aria-valuenow={volume}
+      aria-valuemin={0}
+      aria-valuemax={100}
       className="relative flex items-center h-4 flex-1 cursor-pointer group"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
