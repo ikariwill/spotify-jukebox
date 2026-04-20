@@ -95,34 +95,23 @@ export function ProgressBar() {
         onMouseLeave={handleMouseLeave}
       >
         <div className="relative w-full h-1.5 bg-[#535353] rounded-full overflow-hidden">
-          {hoverPct === null && !dragging ? (
-            /* Normal: white fill up to playback position */
-            <div
-              className="absolute inset-y-0 left-0 bg-white rounded-full"
-              style={{
-                width: `${playbackPct}%`,
-                transition: skipTransition ? 'none' : 'width 1s linear',
-              }}
-            />
-          ) : dragging ? (
-            /* Dragging: green fill up to drag position */
-            <div
-              className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
-              style={{ width: `${dragPct}%` }}
-            />
-          ) : (
-            /* Hover: green up to playback, white from playback to hover */
-            <>
-              <div
-                className="absolute inset-y-0 left-0 bg-white"
-                style={{ width: `${Math.max(playbackPct, hoverPct!)}%`, transition: 'none' }}
-              />
-              <div
-                className="absolute inset-y-0 left-0 bg-spotify-green"
-                style={{ width: `${playbackPct}%`, transition: 'none' }}
-              />
-            </>
-          )}
+          {/* White layer: extends to hover position (or playback when not hovering) */}
+          <div
+            className="absolute inset-y-0 left-0 bg-white"
+            style={{
+              width: dragging ? `${dragPct}%` : `${hoverPct ?? playbackPct}%`,
+              transition: (!dragging && hoverPct === null && !skipTransition) ? 'width 1s linear' : 'none',
+            }}
+          />
+          {/* Green layer: always covers 0..playback, only visible on hover/drag */}
+          <div
+            className="absolute inset-y-0 left-0 bg-spotify-green"
+            style={{
+              width: dragging ? `${dragPct}%` : `${playbackPct}%`,
+              opacity: (hoverPct !== null || dragging) ? 1 : 0,
+              transition: 'none',
+            }}
+          />
         </div>
 
         {/* Thumb — stays at playback/drag position, not hover */}
