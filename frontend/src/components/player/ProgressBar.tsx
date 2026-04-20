@@ -81,7 +81,7 @@ export function ProgressBar() {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="relative w-full h-1.5 bg-[#535353] rounded-full overflow-hidden">
+        <div className="relative w-full h-1.5 bg-[#4d4c4d] rounded-full overflow-hidden">
           {/* White layer: extends to hover position (or playback when not hovering) */}
           <div
             className="absolute inset-y-0 left-0 bg-white"
