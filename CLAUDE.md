@@ -35,15 +35,16 @@ pnpm --filter @jukebox/frontend test:coverage
 
 ## Path aliases
 
-| Alias | Resolves to |
-|---|---|
+| Alias             | Resolves to                                         |
+| ----------------- | --------------------------------------------------- |
 | `@jukebox/shared` | `shared/types/index.ts` (both backend and frontend) |
-| `@/*` | `frontend/src/*` (frontend only) |
+| `@/*`             | `frontend/src/*` (frontend only)                    |
 
 Both `tsconfig.json` and `vitest.config.ts` in each package define these aliases independently.
 
 ## Key constraints
 
+- **Always use `http://127.0.0.1` instead of `http://localhost`** in all dev URLs (backend `.env`, frontend `.env.local`, Spotify Dashboard redirect URI). Chrome's cross-site cookie policy blocks session cookies on OAuth redirects from `accounts.spotify.com` back to `localhost`, causing "Invalid state or missing code" errors. `127.0.0.1` is treated as same-site and is not affected.
 - Tokens are **never sent to the browser** — only `accessToken` is returned by `GET /auth/token` for the Spotify SDK
 - Backend services are exported from `backend/src/index.ts`; routes import them from there
 - Routes are loaded via **dynamic import** inside `start()` to avoid circular deps with `index.ts`

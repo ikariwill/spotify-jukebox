@@ -229,8 +229,8 @@ Sets `@testing-library/jest-dom` matchers and env vars:
 
 ```ts
 import "@testing-library/jest-dom";
-process.env.NEXT_PUBLIC_BACKEND_URL = "http://localhost:3001";
-process.env.NEXT_PUBLIC_SOCKET_URL = "http://localhost:3001";
+process.env.NEXT_PUBLIC_BACKEND_URL = "http://127.0.0.1:3001";
+process.env.NEXT_PUBLIC_SOCKET_URL = "http://127.0.0.1:3001";
 ```
 
 ## Vitest config — path aliases
