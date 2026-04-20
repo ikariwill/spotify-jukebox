@@ -9,6 +9,7 @@ interface HistoryEntry {
   title: string;
   artist: string;
   albumArt: string;
+  duration: number;
 }
 
 interface InternalQueueTrack extends Omit<QueueTrack, "userVote"> {
@@ -82,6 +83,7 @@ export class QueueService {
         title: track.title,
         artist: track.artist,
         albumArt: track.albumArt,
+        duration: track.duration,
       };
       this.recentlyPlayed = [...this.recentlyPlayed, entry].slice(-20);
       this.store?.pushHistory(entry).catch(console.error);

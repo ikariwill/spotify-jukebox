@@ -39,14 +39,14 @@ export function Controls() {
       <div className="flex items-center gap-6">
         <button
           onClick={handlePrevious}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
           aria-label="Previous"
         >
           <SkipBack size={22} />
         </button>
         <button
           onClick={isPlaying ? handlePause : handlePlay}
-          className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-black hover:scale-105 active:scale-95 transition-transform shadow-lg"
+          className="w-14 h-14 rounded-full bg-white flex items-center justify-center text-black hover:scale-105 active:scale-95 transition-transform shadow-lg cursor-pointer"
           aria-label={isPlaying ? "Pause" : "Play"}
         >
           {isPlaying ? (
@@ -62,7 +62,7 @@ export function Controls() {
         </button>
         <button
           onClick={handleSkip}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
           aria-label="Skip"
         >
           <SkipForward size={22} />

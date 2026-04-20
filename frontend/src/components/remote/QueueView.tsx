@@ -38,7 +38,7 @@ export function QueueView({ onVote }: Props) {
             <div className="flex flex-col items-center gap-0.5 shrink-0">
               <button
                 onClick={() => onVote(t.id, 1)}
-                className={`text-base leading-none transition-colors ${
+                className={`text-base leading-none transition-colors cursor-pointer ${
                   t.userVote === 1
                     ? "text-spotify-green"
                     : "text-gray-600 hover:text-gray-300"
@@ -60,7 +60,7 @@ export function QueueView({ onVote }: Props) {
               </span>
               <button
                 onClick={() => onVote(t.id, -1)}
-                className={`text-base leading-none transition-colors ${
+                className={`text-base leading-none transition-colors cursor-pointer ${
                   t.userVote === -1
                     ? "text-red-400"
                     : "text-gray-600 hover:text-gray-300"

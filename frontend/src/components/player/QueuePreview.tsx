@@ -14,11 +14,20 @@ type HistoryEntry = {
   title: string;
   artist: string;
   albumArt: string;
+  duration: number;
 };
+
+function formatMs(ms: number): string {
+  const totalSecs = Math.floor(ms / 1000);
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
 
 export function QueuePreview() {
   const tracks = useQueueStore(useShallow((s) => s.tracks));
   const nowPlaying = usePlayerStore((s) => s.nowPlaying);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
   const [tab, setTab] = useState<"queue" | "history">("queue");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [confirming, setConfirming] = useState(false);
@@ -50,7 +59,7 @@ export function QueuePreview() {
       <div className="flex items-center gap-5 mb-4 border-b border-white/5">
         <button
           onClick={() => setTab("queue")}
-          className={`pb-2 text-sm font-semibold transition-colors ${
+          className={`pb-2 text-sm font-semibold transition-colors cursor-pointer ${
             tab === "queue"
               ? "text-white border-b-2 border-white"
               : "text-gray-500 hover:text-gray-300"
@@ -60,7 +69,7 @@ export function QueuePreview() {
         </button>
         <button
           onClick={() => setTab("history")}
-          className={`pb-2 text-sm font-semibold transition-colors ${
+          className={`pb-2 text-sm font-semibold transition-colors cursor-pointer ${
             tab === "history"
               ? "text-white border-b-2 border-white"
               : "text-gray-500 hover:text-gray-300"
@@ -76,9 +85,25 @@ export function QueuePreview() {
             {/* Now playing */}
             {nowPlaying && (
               <div className="mb-4">
-                <p className="text-xs font-semibold text-white mb-2">
-                  Now playing
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="text-xs font-semibold text-white">
+                    Now playing
+                  </p>
+                  <span className="flex items-end gap-0.5 h-3">
+                    <span
+                      className={`sound-bar${isPlaying ? "" : " paused"}`}
+                    />
+                    <span
+                      className={`sound-bar${isPlaying ? "" : " paused"}`}
+                    />
+                    <span
+                      className={`sound-bar${isPlaying ? "" : " paused"}`}
+                    />
+                    <span
+                      className={`sound-bar${isPlaying ? "" : " paused"}`}
+                    />
+                  </span>
+                </div>
                 <div className="flex items-center gap-3 px-3 py-2 rounded-xl">
                   <Image
                     src={nowPlaying.albumArt}
@@ -108,7 +133,7 @@ export function QueuePreview() {
                 </p>
                 <button
                   onClick={handleClearClick}
-                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${
+                  className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors cursor-pointer ${
                     confirming
                       ? "text-red-400 hover:text-red-300"
                       : "text-gray-600 hover:text-gray-400"
@@ -141,6 +166,9 @@ export function QueuePreview() {
                     <p className="text-sm font-medium truncate">{t.title}</p>
                     <p className="text-xs text-gray-500 truncate">{t.artist}</p>
                   </div>
+                  <span className="text-xs text-gray-600 shrink-0">
+                    {formatMs(t.duration)}
+                  </span>
                   {t.votes !== 0 && (
                     <span
                       className={`text-xs font-bold shrink-0 ${t.votes > 0 ? "text-spotify-green" : "text-red-400"}`}
@@ -178,6 +206,11 @@ export function QueuePreview() {
                   <p className="text-sm font-medium truncate">{t.title}</p>
                   <p className="text-xs text-gray-500 truncate">{t.artist}</p>
                 </div>
+                {t.duration > 0 && (
+                  <span className="text-xs text-gray-600 shrink-0">
+                    {formatMs(t.duration)}
+                  </span>
+                )}
               </li>
             ))}
             {history.length === 0 && (
