@@ -31,15 +31,14 @@ const makeTrack = (): SpotifyTrack => ({
 describe("useQueue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useQueueStore.setState({ tracks: [], userStatus: null });
+    useQueueStore.setState({ tracks: [] });
     usePlayerStore.setState({ partyMode: false } as any);
   });
 
   describe("fetchQueue", () => {
-    it("updates tracks and userStatus from GET /queue", async () => {
+    it("updates tracks from GET /queue", async () => {
       mockOk({
         tracks: [{ id: "1", title: "Track", votes: 0 }],
-        userStatus: { songsAdded: 1, maxSongs: 3, cooldownRemaining: 0 },
         partyMode: false,
       });
       const { result } = renderHook(() => useQueue());
@@ -47,13 +46,11 @@ describe("useQueue", () => {
         await result.current.fetchQueue();
       });
       expect(useQueueStore.getState().tracks).toHaveLength(1);
-      expect(useQueueStore.getState().userStatus?.songsAdded).toBe(1);
     });
 
     it("sets partyMode in playerStore from response", async () => {
       mockOk({
         tracks: [],
-        userStatus: { songsAdded: 0, maxSongs: 3, cooldownRemaining: 0 },
         partyMode: true,
       });
       const { result } = renderHook(() => useQueue());
@@ -79,11 +76,6 @@ describe("useQueue", () => {
             Promise.resolve(
               JSON.stringify({
                 tracks: [],
-                userStatus: {
-                  songsAdded: 1,
-                  maxSongs: 3,
-                  cooldownRemaining: 0,
-                },
                 partyMode: false,
               }),
             ),
