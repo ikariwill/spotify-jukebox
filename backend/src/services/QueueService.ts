@@ -190,6 +190,22 @@ export class QueueService {
     return true;
   }
 
+  reorder(fromIndex: number, toIndex: number): boolean {
+    if (
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= this.queue.length ||
+      toIndex >= this.queue.length ||
+      fromIndex === toIndex
+    ) {
+      return false;
+    }
+    const [track] = this.queue.splice(fromIndex, 1);
+    this.queue.splice(toIndex, 0, track);
+    this.persist().catch(console.error);
+    return true;
+  }
+
   private sort(): void {
     this.queue.sort((a, b) => b.votes - a.votes || a.addedAt - b.addedAt);
   }

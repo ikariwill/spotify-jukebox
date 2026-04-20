@@ -70,6 +70,24 @@ queueRouter.delete("/:id", (req, res) => {
   res.json({ ok: true });
 });
 
+queueRouter.post("/reorder", (req, res) => {
+  const { fromIndex, toIndex } = req.body;
+
+  if (typeof fromIndex !== "number" || typeof toIndex !== "number") {
+    res.status(400).json({ error: "fromIndex and toIndex must be numbers" });
+    return;
+  }
+
+  const success = queueService.reorder(fromIndex, toIndex);
+  if (!success) {
+    res.status(400).json({ error: "Invalid indices" });
+    return;
+  }
+
+  io.emit("queue:update", queueService.getQueue());
+  res.json({ ok: true });
+});
+
 // Called by the player when a track finishes naturally
 queueRouter.post("/played", (req, res) => {
   const track = queueService.shift();

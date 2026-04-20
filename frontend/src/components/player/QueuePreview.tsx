@@ -1,13 +1,32 @@
 "use client";
 
+import {
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
 import { api } from '@/lib/api'
+import { useQueue } from '@/hooks/useQueue'
 import { usePlayerStore } from '@/store/playerStore'
 import { useQueueStore } from '@/store/queueStore'
+
+import type { QueueTrack } from '@jukebox/shared'
 
 type HistoryEntry = {
   spotifyId: string;
@@ -24,14 +43,74 @@ function formatMs(ms: number): string {
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
+function SortableTrackItem({ track, index, onPlay }: { track: QueueTrack; index: number; onPlay: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: track.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform ? { ...transform, x: 0 } : null),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer touch-none group"
+      onClick={onPlay}
+      {...attributes}
+      {...listeners}
+    >
+      <span className="text-gray-600 w-4 text-xs text-center shrink-0">{index + 1}</span>
+      <Image
+        src={track.albumArt}
+        alt={track.album}
+        width={36}
+        height={36}
+        className="rounded shrink-0"
+        unoptimized
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{track.title}</p>
+        <p className="text-xs text-gray-500 truncate">{track.artist}</p>
+      </div>
+      <span className="text-xs text-gray-600 shrink-0">{formatMs(track.duration)}</span>
+      {track.votes !== 0 && (
+        <span
+          className={`text-xs font-bold shrink-0 ${track.votes > 0 ? "text-spotify-green" : "text-red-400"}`}
+        >
+          {track.votes > 0 ? `+${track.votes}` : track.votes}
+        </span>
+      )}
+    </li>
+  );
+}
+
 export function QueuePreview() {
   const tracks = useQueueStore(useShallow((s) => s.tracks));
   const nowPlaying = usePlayerStore((s) => s.nowPlaying);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const { reorderTrack, playNow } = useQueue();
   const [tab, setTab] = useState<"queue" | "history">("queue");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [confirming, setConfirming] = useState(false);
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const fromIndex = tracks.findIndex((t) => t.id === active.id);
+    const toIndex = tracks.findIndex((t) => t.id === over.id);
+    if (fromIndex !== -1 && toIndex !== -1) {
+      reorderTrack(fromIndex, toIndex);
+    }
+  };
 
   useEffect(() => {
     if (tab === "history") {
@@ -145,45 +224,27 @@ export function QueuePreview() {
                 </button>
               </div>
             )}
-            <ul className="space-y-1">
-              {tracks.map((t, i) => (
-                <li
-                  key={t.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
-                >
-                  <span className="text-gray-600 w-4 text-xs text-center shrink-0">
-                    {i + 1}
-                  </span>
-                  <Image
-                    src={t.albumArt}
-                    alt={t.album}
-                    width={36}
-                    height={36}
-                    className="rounded shrink-0"
-                    unoptimized
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{t.title}</p>
-                    <p className="text-xs text-gray-500 truncate">{t.artist}</p>
-                  </div>
-                  <span className="text-xs text-gray-600 shrink-0">
-                    {formatMs(t.duration)}
-                  </span>
-                  {t.votes !== 0 && (
-                    <span
-                      className={`text-xs font-bold shrink-0 ${t.votes > 0 ? "text-spotify-green" : "text-red-400"}`}
-                    >
-                      {t.votes > 0 ? `+${t.votes}` : t.votes}
-                    </span>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={tracks.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className="space-y-1">
+                  {tracks.map((t, i) => (
+                    <SortableTrackItem key={t.id} track={t} index={i} onPlay={() => playNow(i)} />
+                  ))}
+                  {tracks.length === 0 && (
+                    <li className="text-center text-gray-700 text-sm py-8">
+                      Queue is empty
+                    </li>
                   )}
-                </li>
-              ))}
-              {tracks.length === 0 && (
-                <li className="text-center text-gray-700 text-sm py-8">
-                  Queue is empty
-                </li>
-              )}
-            </ul>
+                </ul>
+              </SortableContext>
+            </DndContext>
           </>
         )}
 
@@ -192,7 +253,12 @@ export function QueuePreview() {
             {history.map((t) => (
               <li
                 key={t.spotifyId}
-                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors"
+                className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 transition-colors cursor-pointer"
+                onClick={() =>
+                  api
+                    .post("/spotify/play", { uris: [`spotify:track:${t.spotifyId}`] })
+                    .catch(console.error)
+                }
               >
                 <Image
                   src={t.albumArt}
