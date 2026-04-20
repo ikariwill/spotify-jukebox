@@ -149,7 +149,7 @@ export function TopSearchBar() {
         {query && (
           <button
             onClick={clear}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white cursor-pointer"
             aria-label="Clear search"
           >
             <X size={14} />

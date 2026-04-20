@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { useSocket } from '@/hooks/useSocket';
-import { useQueue } from '@/hooks/useQueue';
-import { SearchBar } from '@/components/remote/SearchBar';
-import { TrackList } from '@/components/remote/TrackList';
-import { QueueView } from '@/components/remote/QueueView';
-import type { SpotifyTrack } from '@jukebox/shared';
+import { useCallback, useState } from 'react'
 
-type Tab = 'search' | 'queue';
+import { QueueView } from '@/components/remote/QueueView'
+import { SearchBar } from '@/components/remote/SearchBar'
+import { TrackList } from '@/components/remote/TrackList'
+import { useQueue } from '@/hooks/useQueue'
+import { useSocket } from '@/hooks/useSocket'
+
+import type { SpotifyTrack } from "@jukebox/shared";
+
+type Tab = "search" | "queue";
 
 export default function RemotePage() {
   useSocket();
@@ -16,8 +18,10 @@ export default function RemotePage() {
   const { addTrack, vote, fetchQueue } = useQueue();
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('search');
-  const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("search");
+  const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(
+    null,
+  );
   const [addingId, setAddingId] = useState<string | null>(null);
 
   const showFeedback = (msg: string, ok: boolean) => {
@@ -32,13 +36,13 @@ export default function RemotePage() {
         await addTrack(track);
         showFeedback(`"${track.title}" added to queue!`, true);
       } catch (err: any) {
-        const msg = err.response?.data?.error ?? 'Failed to add track';
+        const msg = err.response?.data?.error ?? "Failed to add track";
         showFeedback(msg, false);
       } finally {
         setAddingId(null);
       }
     },
-    [addTrack]
+    [addTrack],
   );
 
   const handleVote = useCallback(
@@ -46,10 +50,10 @@ export default function RemotePage() {
       try {
         await vote(trackId, direction);
       } catch {
-        showFeedback('Vote failed', false);
+        showFeedback("Vote failed", false);
       }
     },
-    [vote]
+    [vote],
   );
 
   // Initial queue fetch
@@ -70,17 +74,17 @@ export default function RemotePage() {
 
         {/* Tabs */}
         <div className="flex mt-4 border-b border-white/10">
-          {(['search', 'queue'] as Tab[]).map((tab) => (
+          {(["search", "queue"] as Tab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2.5 text-sm font-medium capitalize transition-colors ${
+              className={`flex-1 py-2.5 text-sm font-medium capitalize transition-colors cursor-pointer ${
                 activeTab === tab
-                  ? 'text-white border-b-2 border-spotify-green -mb-px'
-                  : 'text-gray-500 hover:text-gray-300'
+                  ? "text-white border-b-2 border-spotify-green -mb-px"
+                  : "text-gray-500 hover:text-gray-300"
               }`}
             >
-              {tab === 'queue' ? '🎶 Queue' : '🔍 Search'}
+              {tab === "queue" ? "🎶 Queue" : "🔍 Search"}
             </button>
           ))}
         </div>
@@ -90,7 +94,9 @@ export default function RemotePage() {
       {feedback && (
         <div
           className={`mx-4 mt-3 rounded-xl px-4 py-2.5 text-sm text-center transition-all ${
-            feedback.ok ? 'bg-spotify-green/20 text-spotify-green' : 'bg-red-500/20 text-red-400'
+            feedback.ok
+              ? "bg-spotify-green/20 text-spotify-green"
+              : "bg-red-500/20 text-red-400"
           }`}
         >
           {feedback.msg}
@@ -99,7 +105,7 @@ export default function RemotePage() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pt-3 pb-8">
-        {activeTab === 'search' ? (
+        {activeTab === "search" ? (
           <TrackList
             tracks={searchResults}
             onAdd={handleAdd}

@@ -53,7 +53,7 @@ export function BrowseCategories({
           <button
             key={cat.id}
             onClick={() => onCategorySelect(cat.id, cat.name)}
-            className={`relative overflow-hidden rounded-lg h-16 text-left ${
+            className={`relative overflow-hidden rounded-lg h-16 text-left cursor-pointer ${
               CATEGORY_COLORS[i % CATEGORY_COLORS.length]
             } hover:brightness-110 active:scale-95 transition-all`}
           >
