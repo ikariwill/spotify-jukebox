@@ -20,7 +20,8 @@ export function ProgressBar() {
 
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [dragPct, setDragPct] = useState(0);
+  const [hoverPct, setHoverPct] = useState<number | null>(null);
+  const [activePct, setActivePct] = useState(0);
   const [skipTransition, setSkipTransition] = useState(false);
   const prevTrackId = useRef<string | null>(null);
 
@@ -41,7 +42,9 @@ export function ProgressBar() {
   }, [nowPlaying?.spotifyId]);
 
   const duration = nowPlaying?.duration ?? 1;
-  const displayPct = dragging ? dragPct : Math.min((progress / duration) * 100, 100);
+  const playbackPct = Math.min((progress / duration) * 100, 100);
+  // During interaction show the drag/hover position, otherwise playback
+  const displayPct = dragging ? activePct : (hoverPct ?? playbackPct);
 
   const pctFromEvent = useCallback((e: MouseEvent | React.MouseEvent) => {
     const rect = trackRef.current?.getBoundingClientRect();
@@ -55,15 +58,22 @@ export function ProgressBar() {
     api.post('/spotify/seek', { positionMs: ms }).catch(console.error);
   }, [duration, setProgress]);
 
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging) setHoverPct(pctFromEvent(e));
+  }, [dragging, pctFromEvent]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!dragging) setHoverPct(null);
+  }, [dragging]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const pct = pctFromEvent(e);
     setDragging(true);
-    setDragPct(pct);
+    setActivePct(pct);
+    setHoverPct(null);
 
-    const onMove = (ev: MouseEvent) => {
-      setDragPct(pctFromEvent(ev));
-    };
+    const onMove = (ev: MouseEvent) => setActivePct(pctFromEvent(ev));
     const onUp = (ev: MouseEvent) => {
       const finalPct = pctFromEvent(ev);
       setDragging(false);
@@ -75,26 +85,47 @@ export function ProgressBar() {
     window.addEventListener('mouseup', onUp);
   }, [pctFromEvent, seek]);
 
+  const isInteracting = dragging || hoverPct !== null;
+  const tooltipMs = Math.round((displayPct / 100) * duration);
+
   return (
     <div className="w-full">
       <div
         ref={trackRef}
         className="relative flex items-center h-4 cursor-pointer group"
         onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
         <div className="relative w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
           <div
             className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
-            style={{ width: `${displayPct}%`, transition: (dragging || skipTransition) ? 'none' : 'width 1s linear' }}
+            style={{
+              width: `${isInteracting ? displayPct : playbackPct}%`,
+              transition: (dragging || skipTransition || hoverPct !== null) ? 'none' : 'width 1s linear',
+            }}
           />
         </div>
+
+        {/* Thumb */}
         <div
           className="absolute w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
           style={{ left: `${displayPct}%`, transform: 'translateX(-50%)' }}
         />
+
+        {/* Time tooltip */}
+        {isInteracting && (
+          <div
+            className="absolute -top-7 px-1.5 py-0.5 bg-neutral-800 text-white text-xs rounded pointer-events-none"
+            style={{ left: `${displayPct}%`, transform: 'translateX(-50%)' }}
+          >
+            {formatMs(tooltipMs)}
+          </div>
+        )}
       </div>
+
       <div className="flex justify-between text-xs text-gray-500 mt-1.5">
-        <span>{formatMs(dragging ? Math.round((dragPct / 100) * duration) : progress)}</span>
+        <span>{formatMs(progress)}</span>
         <span>{formatMs(duration)}</span>
       </div>
     </div>
