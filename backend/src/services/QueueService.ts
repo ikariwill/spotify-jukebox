@@ -2,24 +2,60 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { config } from '../config'
 
+import type { RedisQueueStore } from "./RedisQueueStore";
+
 import type { QueueTrack, SpotifyTrack } from "@jukebox/shared";
+
+interface HistoryEntry {
+  spotifyId: string;
+  title: string;
+  artist: string;
+  albumArt: string;
+}
+
 interface InternalQueueTrack extends Omit<QueueTrack, "userVote"> {
   voters: Map<string, 1 | -1>;
 }
 
+interface SerializedTrack extends Omit<InternalQueueTrack, "voters"> {
+  voters: Record<string, 1 | -1>;
+}
+
 export class QueueService {
   private queue: InternalQueueTrack[] = [];
-  private recentlyPlayed: Array<{
-    spotifyId: string;
-    title: string;
-    artist: string;
-    albumArt: string;
-  }> = [];
+  private recentlyPlayed: HistoryEntry[] = [];
   private userActivity = new Map<
     string,
     { count: number; lastAdded: number }
   >();
+  private store: RedisQueueStore | null = null;
   partyMode = false;
+
+  setStore(store: RedisQueueStore): void {
+    this.store = store;
+  }
+
+  async hydrate(): Promise<void> {
+    if (!this.store) return;
+    const serialized = await this.store.loadQueue<SerializedTrack>();
+    this.queue = serialized.map((t) => ({
+      ...t,
+      voters: new Map(Object.entries(t.voters) as [string, 1 | -1][]),
+    }));
+    this.recentlyPlayed = await this.store.loadHistory<HistoryEntry>();
+    console.log(
+      `[Queue] Hydrated ${this.queue.length} tracks, ${this.recentlyPlayed.length} history entries from Redis`,
+    );
+  }
+
+  private async persist(): Promise<void> {
+    if (!this.store) return;
+    const serialized: SerializedTrack[] = this.queue.map((t) => ({
+      ...t,
+      voters: Object.fromEntries(t.voters) as Record<string, 1 | -1>,
+    }));
+    await this.store.saveQueue(serialized);
+  }
 
   getQueue(requestingSessionId?: string): QueueTrack[] {
     return this.queue.map((t) => ({
@@ -47,15 +83,15 @@ export class QueueService {
   shift(): InternalQueueTrack | undefined {
     const track = this.queue.shift();
     if (track) {
-      this.recentlyPlayed = [
-        ...this.recentlyPlayed,
-        {
-          spotifyId: track.spotifyId,
-          title: track.title,
-          artist: track.artist,
-          albumArt: track.albumArt,
-        },
-      ].slice(-5);
+      const entry: HistoryEntry = {
+        spotifyId: track.spotifyId,
+        title: track.title,
+        artist: track.artist,
+        albumArt: track.albumArt,
+      };
+      this.recentlyPlayed = [...this.recentlyPlayed, entry].slice(-20);
+      this.store?.pushHistory(entry).catch(console.error);
+      this.persist().catch(console.error);
     }
     return track;
   }
@@ -68,10 +104,11 @@ export class QueueService {
     return this.recentlyPlayed.map((t) => t.spotifyId);
   }
 
-  popHistory():
-    | { spotifyId: string; title: string; artist: string; albumArt: string }
-    | undefined {
-    return this.recentlyPlayed.pop();
+  async popHistory(): Promise<HistoryEntry | null> {
+    if (this.store) {
+      return this.store.popHistory<HistoryEntry>();
+    }
+    return this.recentlyPlayed.pop() ?? null;
   }
 
   canAdd(sessionId: string): { allowed: boolean; reason?: string } {
@@ -113,6 +150,7 @@ export class QueueService {
 
     this.queue.push(internal);
     this.sort();
+    this.persist().catch(console.error);
 
     if (sessionId !== "autoplay") {
       const activity = this.userActivity.get(sessionId);
@@ -140,6 +178,7 @@ export class QueueService {
     }
 
     this.sort();
+    this.persist().catch(console.error);
     return true;
   }
 
@@ -147,6 +186,7 @@ export class QueueService {
     const idx = this.queue.findIndex((t) => t.id === trackId);
     if (idx === -1) return false;
     this.queue.splice(idx, 1);
+    this.persist().catch(console.error);
     return true;
   }
 

@@ -4,32 +4,33 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  Tablet  (localhost:3000/player)                         │
+│  Tablet  (127.0.0.1:3000/player)                         │
 │  - Spotify Web Playback SDK (browser player)             │
 │  - Shows: album art, controls, queue preview, QR code    │
 └────────────────┬────────────────────────────────────────┘
                  │  HTTP + WebSocket (Socket.IO)
 ┌────────────────▼────────────────────────────────────────┐
-│  Backend  (localhost:3001)                               │
+│  Backend  (127.0.0.1:3001)                               │
 │  - Express + Socket.IO                                   │
 │  - express-session (tokens never leave here)             │
 │  - SpotifyService  QueueService  AnalyticsService        │
 │  - AutoPlayService  (polls every 5s when queue empty)    │
-└────────────────┬────────────────────────────────────────┘
-                 │  HTTP + WebSocket
-┌────────────────▼────────────────────────────────────────┐
-│  Mobile  (localhost:3000/remote)                         │
-│  - Search tracks, add to queue, vote ▲/▼                 │
-└─────────────────────────────────────────────────────────┘
+└────────────┬───────────────────────────────┬────────────┘
+             │  HTTP + WebSocket             │  node-redis
+┌────────────▼────────────────┐  ┌──────────▼────────────┐
+│  Mobile  (127.0.0.1:3000/   │  │  Redis                 │
+│  remote)                    │  │  - Sessions            │
+│  - Search, add, vote ▲/▼    │  │  - Queue + history     │
+└─────────────────────────────┘  └───────────────────────┘
 ```
 
 ## Monorepo packages
 
-| Package | Entry point | Purpose |
-|---|---|---|
-| `shared` | `types/index.ts` | TypeScript interfaces shared by backend and frontend |
-| `backend` | `src/index.ts` | Composition root — wires all services, routes, Socket.IO |
-| `frontend` | `src/app/layout.tsx` | Next.js App Router |
+| Package    | Entry point          | Purpose                                                  |
+| ---------- | -------------------- | -------------------------------------------------------- |
+| `shared`   | `types/index.ts`     | TypeScript interfaces shared by backend and frontend     |
+| `backend`  | `src/index.ts`       | Composition root — wires all services, routes, Socket.IO |
+| `frontend` | `src/app/layout.tsx` | Next.js App Router                                       |
 
 ## Backend service layer
 
@@ -39,6 +40,12 @@ SpotifyService     Stateless. Receives TokenSet on every call.
 
 QueueService       In-memory queue with voting and anti-spam.
                    Owns the source of truth for the queue.
+                   If a RedisQueueStore is attached (via setStore),
+                   the queue and history are persisted to Redis.
+
+RedisQueueStore    Thin Redis adapter for QueueService.
+                   Serialises queue (JSON string) and history (Redis list).
+                   Wired in index.ts when REDIS_URL is set.
 
 AnalyticsService   In-memory play counts and user activity.
 
@@ -47,18 +54,29 @@ AutoPlayService    Polls every 5s. Needs setAdminTokens() called
 ```
 
 Services are instantiated in `backend/src/index.ts` and exported:
+
 ```ts
-export const spotifyService = new SpotifyService();
-export const queueService   = new QueueService();
+export const spotifyService   = new SpotifyService();
+export const queueService     = new QueueService();
 export const analyticsService = new AnalyticsService();
 export const autoPlayService  = new AutoPlayService(...);
 ```
 
+On startup, if `REDIS_URL` is set, a Redis client is connected and wired:
+
+```ts
+const redisClient = await buildRedis(); // connects node-redis client
+const queueStore = new RedisQueueStore(redisClient);
+queueService.setStore(queueStore);
+await queueService.hydrate(); // loads persisted queue + history
+```
+
 Routes and middleware import from `../index` (or `../../index`).  
 Routes themselves are loaded via **dynamic import** inside `start()` to break the circular dependency:
+
 ```ts
 // index.ts — inside async start()
-const { authRouter } = await import('./routes/auth');
+const { authRouter } = await import("./routes/auth");
 ```
 
 ## Token flow
@@ -115,6 +133,7 @@ Re-sort runs after every `addTrack`, `vote`, and `remove` call.
 ## Auto-play
 
 `AutoPlayService` polls every 5 seconds. When `queueService.isEmpty()` is true and `recentlyPlayed` has at least one seed:
+
 1. Refreshes admin tokens if expired
 2. Calls `GET /recommendations?seed_tracks=<last 5 played>`
 3. Adds results via `queueService.addTrack(rec, 'autoplay')`
@@ -125,6 +144,7 @@ No recommendations fire until the first track has been played (no seeds yet).
 ## Party mode
 
 `queueService.partyMode` (boolean). When `true`:
+
 - `canAdd()` always returns `{ allowed: true }`
 - No cooldown, no per-user song limit
 
