@@ -25,8 +25,12 @@ async function fetchAccessToken(): Promise<string> {
 
 export function useSpotifyPlayer() {
   const playerRef = useRef<any>(null);
-  const setNowPlaying = usePlayerStore((s) => s.setNowPlaying);
-  const setPlayerState = usePlayerStore((s) => s.setPlayerState);
+  const lastTrackIdRef = useRef<string | null>(null);
+  const isSkippingRef = useRef(false);
+
+  // Use refs so the effect runs only once without stale closures
+  const setNowPlayingRef = useRef(usePlayerStore.getState().setNowPlaying);
+  const setPlayerStateRef = useRef(usePlayerStore.getState().setPlayerState);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -51,7 +55,43 @@ export function useSpotifyPlayer() {
       player.addListener("player_state_changed", (state: any) => {
         if (!state) return;
         const track = state.track_window.current_track;
-        setNowPlaying({
+
+        console.log("[Spotify SDK] state_changed", {
+          paused: state.paused,
+          position: state.position,
+          trackId: track.id,
+          lastTrackId: lastTrackIdRef.current,
+          nextTracks: state.track_window.next_tracks.length,
+          isSkipping: isSkippingRef.current,
+        });
+
+        // Detect track end: paused at position 0, same track that was playing,
+        // and Spotify's own next_tracks queue is empty (SDK exhausted its queue)
+        const trackEnded =
+          !isSkippingRef.current &&
+          state.paused &&
+          state.position === 0 &&
+          lastTrackIdRef.current !== null &&
+          lastTrackIdRef.current === track.id &&
+          state.track_window.next_tracks.length === 0;
+
+        lastTrackIdRef.current = track.id;
+
+        if (trackEnded) {
+          console.log("[Spotify SDK] Track ended, calling skip:", track.id);
+          isSkippingRef.current = true;
+          fetch(`${BACKEND_URL}/spotify/skip`, {
+            method: "POST",
+            credentials: "include",
+          })
+            .catch(console.error)
+            .finally(() => {
+              isSkippingRef.current = false;
+            });
+          return;
+        }
+
+        setNowPlayingRef.current({
           spotifyId: track.id,
           title: track.name,
           artist: track.artists.map((a: any) => a.name).join(", "),
@@ -61,7 +101,7 @@ export function useSpotifyPlayer() {
           progress: state.position,
           isPlaying: !state.paused,
         });
-        setPlayerState({
+        setPlayerStateRef.current({
           isPlaying: !state.paused,
           volume:
             state.volume != null ? Math.round(state.volume * 100) : undefined,
@@ -131,7 +171,7 @@ export function useSpotifyPlayer() {
         document.body.removeChild(script);
       }
     };
-  }, [setNowPlaying, setPlayerState]);
+  }, []);
 
   return playerRef;
 }

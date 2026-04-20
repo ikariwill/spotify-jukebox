@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useQueueStore } from '@/store/queueStore';
+import Image from 'next/image'
+
+import { useQueueStore } from '@/store/queueStore'
 
 interface Props {
   onVote: (trackId: string, direction: 1 | -1) => void;
@@ -9,31 +10,18 @@ interface Props {
 
 export function QueueView({ onVote }: Props) {
   const tracks = useQueueStore((s) => s.tracks);
-  const userStatus = useQueueStore((s) => s.userStatus);
 
   return (
     <div>
-      {userStatus && (
-        <div className="mb-4 px-1">
-          {userStatus.cooldownRemaining > 0 ? (
-            <p className="text-xs text-yellow-500">
-              ⏳ Cooldown: {Math.ceil(userStatus.cooldownRemaining / 1000)}s before next submission
-            </p>
-          ) : (
-            <p className="text-xs text-gray-600">
-              {userStatus.songsAdded}/{userStatus.maxSongs} songs added this session
-            </p>
-          )}
-        </div>
-      )}
-
       <ul className="space-y-1">
         {tracks.map((t, i) => (
           <li
             key={t.id}
             className="flex items-center gap-3 bg-white/5 rounded-xl p-3"
           >
-            <span className="text-gray-700 text-xs w-4 text-center shrink-0">{i + 1}</span>
+            <span className="text-gray-700 text-xs w-4 text-center shrink-0">
+              {i + 1}
+            </span>
             <Image
               src={t.albumArt}
               alt={t.album}
@@ -51,7 +39,9 @@ export function QueueView({ onVote }: Props) {
               <button
                 onClick={() => onVote(t.id, 1)}
                 className={`text-base leading-none transition-colors ${
-                  t.userVote === 1 ? 'text-spotify-green' : 'text-gray-600 hover:text-gray-300'
+                  t.userVote === 1
+                    ? "text-spotify-green"
+                    : "text-gray-600 hover:text-gray-300"
                 }`}
                 aria-label="Upvote"
               >
@@ -60,10 +50,10 @@ export function QueueView({ onVote }: Props) {
               <span
                 className={`text-xs font-bold w-5 text-center ${
                   t.votes > 0
-                    ? 'text-spotify-green'
+                    ? "text-spotify-green"
                     : t.votes < 0
-                    ? 'text-red-400'
-                    : 'text-gray-500'
+                      ? "text-red-400"
+                      : "text-gray-500"
                 }`}
               >
                 {t.votes}
@@ -71,7 +61,9 @@ export function QueueView({ onVote }: Props) {
               <button
                 onClick={() => onVote(t.id, -1)}
                 className={`text-base leading-none transition-colors ${
-                  t.userVote === -1 ? 'text-red-400' : 'text-gray-600 hover:text-gray-300'
+                  t.userVote === -1
+                    ? "text-red-400"
+                    : "text-gray-600 hover:text-gray-300"
                 }`}
                 aria-label="Downvote"
               >

@@ -9,18 +9,16 @@ import { useQueueStore } from '../store/queueStore'
 import type { SpotifyTrack } from "@jukebox/shared";
 
 export function useQueue() {
-  const { tracks, userStatus, setUserStatus } = useQueueStore();
+  const { tracks } = useQueueStore();
 
   const fetchQueue = useCallback(async () => {
     const data = await api.get<{
       tracks: any[];
-      userStatus: any;
       partyMode: boolean;
     }>("/queue");
     useQueueStore.getState().setTracks(data.tracks);
-    setUserStatus(data.userStatus);
     usePlayerStore.getState().setPartyMode(data.partyMode);
-  }, [setUserStatus]);
+  }, []);
 
   const addTrack = useCallback(
     async (track: SpotifyTrack) => {
@@ -38,5 +36,5 @@ export function useQueue() {
     await api.delete(`/queue/${trackId}`);
   }, []);
 
-  return { tracks, userStatus, fetchQueue, addTrack, vote, removeTrack };
+  return { tracks, fetchQueue, addTrack, vote, removeTrack };
 }

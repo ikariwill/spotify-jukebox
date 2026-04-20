@@ -1,7 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
 
-import { config } from '../config'
-
 import type { RedisQueueStore } from "./RedisQueueStore";
 
 import type { QueueTrack, SpotifyTrack } from "@jukebox/shared";
@@ -24,10 +22,6 @@ interface SerializedTrack extends Omit<InternalQueueTrack, "voters"> {
 export class QueueService {
   private queue: InternalQueueTrack[] = [];
   private recentlyPlayed: HistoryEntry[] = [];
-  private userActivity = new Map<
-    string,
-    { count: number; lastAdded: number }
-  >();
   private store: RedisQueueStore | null = null;
   partyMode = false;
 
@@ -111,24 +105,7 @@ export class QueueService {
     return this.recentlyPlayed.pop() ?? null;
   }
 
-  canAdd(sessionId: string): { allowed: boolean; reason?: string } {
-    if (this.partyMode) return { allowed: true };
-
-    const activity = this.userActivity.get(sessionId);
-    if (!activity) return { allowed: true };
-
-    const now = Date.now();
-    const elapsed = now - activity.lastAdded;
-    if (elapsed < config.queue.cooldownMs) {
-      const remaining = Math.ceil((config.queue.cooldownMs - elapsed) / 1000);
-      return { allowed: false, reason: `Cooldown: ${remaining}s remaining` };
-    }
-    if (activity.count >= config.queue.maxSongsPerUser) {
-      return {
-        allowed: false,
-        reason: `Song limit reached (${config.queue.maxSongsPerUser} per session)`,
-      };
-    }
+  canAdd(_sessionId: string): { allowed: boolean; reason?: string } {
     return { allowed: true };
   }
 
@@ -151,14 +128,6 @@ export class QueueService {
     this.queue.push(internal);
     this.sort();
     this.persist().catch(console.error);
-
-    if (sessionId !== "autoplay") {
-      const activity = this.userActivity.get(sessionId);
-      this.userActivity.set(sessionId, {
-        count: (activity?.count ?? 0) + 1,
-        lastAdded: Date.now(),
-      });
-    }
 
     return { ...internal, userVote: 0 };
   }
@@ -192,17 +161,5 @@ export class QueueService {
 
   private sort(): void {
     this.queue.sort((a, b) => b.votes - a.votes || a.addedAt - b.addedAt);
-  }
-
-  getUserStatus(sessionId: string) {
-    const activity = this.userActivity.get(sessionId);
-    const now = Date.now();
-    return {
-      songsAdded: activity?.count ?? 0,
-      maxSongs: config.queue.maxSongsPerUser,
-      cooldownRemaining: activity
-        ? Math.max(0, config.queue.cooldownMs - (now - activity.lastAdded))
-        : 0,
-    };
   }
 }

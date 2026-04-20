@@ -36,68 +36,40 @@ cp backend/.env.example backend/.env
 
 ---
 
-## Running with Docker (recommended)
+## Dev mode (Docker with hot reload)
 
-Includes Redis, backend and frontend — no local Node.js required.
+Hot reload inside containers — no local Node.js required, code changes reflect instantly.
 
 ```bash
 git clone <repo-url>
 cd spotify-jukebox
-docker compose up -d
+cp backend/.env.example backend/.env
+# Fill in SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET and SESSION_SECRET
+
+docker compose -f docker-compose.dev.yml up
 ```
 
 - Frontend: [http://127.0.0.1:3000](http://127.0.0.1:3000)
 - Backend: [http://127.0.0.1:3001](http://127.0.0.1:3001)
 
-Open `http://127.0.0.1:3000`, click **"Login with Spotify"** and complete the OAuth flow.
+The source code is mounted as a volume — saving any file triggers hot reload automatically (Turbopack on frontend, `tsx watch` on backend). No rebuild needed.
 
-> Redis data (sessions, queue, history) is persisted in a Docker volume and survives container restarts.
+---
 
-### Rebuilding after code changes
+## Production (Docker)
+
+```bash
+docker compose up -d
+```
+
+Builds optimized images. Redis data is persisted in a Docker volume.
+
+### Rebuilding after dependency changes
 
 ```bash
 docker compose build
 docker compose up -d
 ```
-
----
-
-## Running locally (dev mode)
-
-### 1. Install dependencies
-
-```bash
-pnpm install
-```
-
-### 2. Configure frontend environment
-
-```bash
-cp frontend/.env.example frontend/.env.local
-# NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:3001
-# NEXT_PUBLIC_SOCKET_URL=http://127.0.0.1:3001
-```
-
-### 3. Start Redis (optional, for persistence)
-
-```bash
-docker compose up -d redis
-```
-
-Or run Redis locally and set `REDIS_URL=redis://localhost:6379` in `backend/.env`.
-
-### 4. Run
-
-```bash
-pnpm dev
-```
-
-This starts both servers concurrently:
-
-- Frontend: [http://127.0.0.1:3000](http://127.0.0.1:3000)
-- Backend: [http://127.0.0.1:3001](http://127.0.0.1:3001)
-
-Open `http://127.0.0.1:3000` and click **"Login with Spotify"**.
 
 ## Usage
 

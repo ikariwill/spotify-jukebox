@@ -1,0 +1,53 @@
+services:
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    command: sh -c "pnpm install && pnpm --filter @jukebox/shared dev & pnpm --filter @jukebox/backend dev"
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=development
+      - COOKIE_SECURE=false
+      - CI=true
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /app
+    command: sh -c "pnpm install && pnpm --filter @jukebox/frontend dev"
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:3001
+      - NEXT_PUBLIC_SOCKET_URL=http://127.0.0.1:3001
+      - HOSTNAME=0.0.0.0
+      - CI=true
+    volumes:
+      - .:/app
+    depends_on:
+      - backend
+
+volumes:
+  redis_data:
