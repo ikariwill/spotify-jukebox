@@ -3,6 +3,7 @@
 import { Pause, Play, SkipBack, SkipForward, Volume1, Volume2 } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 
+import { useSpotifyPlayerRef } from '@/hooks/useSpotifyPlayer'
 import { api } from '@/lib/api'
 import { usePlayerStore } from '@/store/playerStore'
 
@@ -10,12 +11,16 @@ export function Controls() {
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const volume = usePlayerStore((s) => s.volume);
   const setPlayerState = usePlayerStore((s) => s.setPlayerState);
+  const playerRef = useSpotifyPlayerRef();
   const volumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlay = () => api.post("/spotify/play").catch(console.error);
   const handlePause = () => api.post("/spotify/pause").catch(console.error);
-  const handlePrevious = () =>
-    api.post("/spotify/previous").catch(console.error);
+  const handlePrevious = async () => {
+    const state = await playerRef.current?.getCurrentState();
+    const progress = state?.position ?? 0;
+    api.post("/spotify/previous", { progress }).catch(console.error);
+  };
   const handleSkip = () => api.post("/spotify/skip").catch(console.error);
 
   const handleVolume = useCallback(

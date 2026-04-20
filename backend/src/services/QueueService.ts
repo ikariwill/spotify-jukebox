@@ -105,6 +105,30 @@ export class QueueService {
     return this.recentlyPlayed.pop() ?? null;
   }
 
+  pushHistory(entry: HistoryEntry): void {
+    this.recentlyPlayed.push(entry);
+    this.store?.pushHistory(entry).catch(console.error);
+  }
+
+  prependTrack(track: SpotifyTrack): void {
+    const internal: InternalQueueTrack = {
+      id: uuidv4(),
+      spotifyId: track.spotifyId,
+      uri: track.uri,
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      albumArt: track.albumArt,
+      duration: track.duration,
+      addedBy: "system",
+      votes: 0,
+      addedAt: Date.now(),
+      voters: new Map(),
+    };
+    this.queue.unshift(internal);
+    this.persist().catch(console.error);
+  }
+
   canAdd(_sessionId: string): { allowed: boolean; reason?: string } {
     return { allowed: true };
   }
@@ -149,6 +173,11 @@ export class QueueService {
     this.sort();
     this.persist().catch(console.error);
     return true;
+  }
+
+  clearQueue(): void {
+    this.queue = [];
+    this.persist().catch(console.error);
   }
 
   remove(trackId: string): boolean {

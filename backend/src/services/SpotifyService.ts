@@ -18,12 +18,37 @@ declare module "express-session" {
 const ACCOUNTS_BASE = "https://accounts.spotify.com";
 const API_BASE = "https://api.spotify.com/v1";
 
+// Fallback search query used when Spotify Browse has no matching category
+const CATEGORY_SEARCH_FALLBACK: Record<string, string> = {
+  pop: "pop hits",
+  rock: "rock hits",
+  "hip-hop": "hip hop hits",
+  electronic: "electronic dance",
+  "r-b": "r&b soul hits",
+  latin: "latin hits",
+  indie: "indie pop",
+  jazz: "jazz classics",
+  classical: "classical music",
+  metal: "heavy metal",
+  reggae: "reggae hits",
+  country: "country hits",
+  blues: "blues classics",
+  soul: "soul music hits",
+  funk: "funk carioca",
+  punk: "punk rock",
+  sertanejo: "sertanejo universitario",
+  pagode: "pagode baile",
+  samba: "samba brasil",
+  mpb: "mpb brasil",
+};
+
 async function spotifyFetch<T = void>(
   url: string,
   options: RequestInit & { params?: Record<string, string> } = {},
 ): Promise<T> {
   const { params, ...init } = options;
   const fullUrl = params ? `${url}?${new URLSearchParams(params)}` : url;
+  console.log("[spotifyFetch]", fullUrl.replace(/Bearer [^ ]+/, "Bearer ***"));
   const res = await fetch(fullUrl, init);
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -155,6 +180,31 @@ export class SpotifyService {
     return data.tracks.items.map(this.mapTrack);
   }
 
+  async searchTracksByPopularity(
+    query: string,
+    tokens: TokenSet,
+    returnLimit = 20,
+  ): Promise<SpotifyTrack[]> {
+    const data = await this.apiGet<any>("/search", tokens, {
+      q: query,
+      type: "track",
+      limit: "10",
+    });
+    const sorted = (data.tracks.items as any[])
+      .sort((a, b) => b.popularity - a.popularity)
+      .slice(0, returnLimit);
+
+    return sorted.map(this.mapTrack);
+  }
+
+  async getTracksByCategory(
+    tokens: TokenSet,
+    categoryId: string,
+  ): Promise<SpotifyTrack[]> {
+    const query = CATEGORY_SEARCH_FALLBACK[categoryId] ?? categoryId;
+    return this.searchTracksByPopularity(query, tokens);
+  }
+
   async getPlayer(tokens: TokenSet): Promise<NowPlaying | null> {
     try {
       const data = await this.apiGet<any>("/me/player", tokens);
@@ -187,6 +237,10 @@ export class SpotifyService {
     await this.apiPost("/me/player/next", tokens);
   }
 
+  async seek(tokens: TokenSet, positionMs: number): Promise<void> {
+    await this.apiPut(`/me/player/seek?position_ms=${positionMs}`, tokens);
+  }
+
   async setVolume(tokens: TokenSet, volumePercent: number): Promise<void> {
     await this.apiPut(
       `/me/player/volume?volume_percent=${volumePercent}`,
@@ -210,6 +264,22 @@ export class SpotifyService {
       limit: "5",
     });
     return data.tracks.map(this.mapTrack);
+  }
+
+
+  async getCategories(
+    tokens: TokenSet,
+    limit = 20,
+  ): Promise<{ id: string; name: string; imageUrl: string }[]> {
+    const data = await this.apiGet<any>("/browse/categories", tokens, {
+      limit: String(limit),
+      locale: "en_US",
+    });
+    return data.categories.items.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      imageUrl: c.icons[0]?.url ?? "",
+    }));
   }
 
   private mapTrack(item: any): SpotifyTrack {

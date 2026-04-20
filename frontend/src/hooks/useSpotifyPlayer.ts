@@ -23,8 +23,14 @@ async function fetchAccessToken(): Promise<string> {
   return accessToken;
 }
 
+const _playerSingleton = { current: null as any };
+
+export function useSpotifyPlayerRef() {
+  return _playerSingleton;
+}
+
 export function useSpotifyPlayer() {
-  const playerRef = useRef<any>(null);
+  const playerRef = _playerSingleton;
   const lastTrackIdRef = useRef<string | null>(null);
   const isSkippingRef = useRef(false);
 
@@ -162,7 +168,7 @@ export function useSpotifyPlayer() {
         else console.error("[Spotify SDK] Failed to connect");
       });
 
-      playerRef.current = player;
+      _playerSingleton.current = player;
     };
 
     return () => {
