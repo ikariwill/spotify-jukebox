@@ -36,5 +36,17 @@ export function useQueue() {
     await api.delete(`/queue/${trackId}`);
   }, []);
 
-  return { tracks, fetchQueue, addTrack, vote, removeTrack };
+  const reorderTrack = useCallback(async (fromIndex: number, toIndex: number) => {
+    useQueueStore.getState().moveTrack(fromIndex, toIndex);
+    await api.post("/queue/reorder", { fromIndex, toIndex });
+  }, []);
+
+  const playNow = useCallback(async (index: number) => {
+    if (index !== 0) {
+      await reorderTrack(index, 0);
+    }
+    await api.post("/spotify/skip");
+  }, [reorderTrack]);
+
+  return { tracks, fetchQueue, addTrack, vote, removeTrack, reorderTrack, playNow };
 }
