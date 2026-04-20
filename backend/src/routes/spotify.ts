@@ -133,6 +133,20 @@ spotifyRouter.post("/skip", async (req, res) => {
   }
 });
 
+spotifyRouter.post("/seek", async (req, res) => {
+  const positionMs = parseInt(req.body?.positionMs, 10);
+  if (isNaN(positionMs) || positionMs < 0) {
+    res.status(400).json({ error: "positionMs must be a non-negative number" });
+    return;
+  }
+  try {
+    await spotifyService.seek(req.session.tokens!, positionMs);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(502).json({ error: "Seek failed", details: err.message });
+  }
+});
+
 spotifyRouter.put("/volume", async (req, res) => {
   const volume = parseInt(req.body?.volume, 10);
   if (isNaN(volume) || volume < 0 || volume > 100) {
