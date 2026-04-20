@@ -119,7 +119,7 @@ export function ProgressBar() {
               />
               <div
                 className="absolute inset-y-0 left-0 bg-spotify-green"
-                style={{ width: `${playbackPct}%`, transition: skipTransition ? 'none' : 'width 1s linear' }}
+                style={{ width: `${playbackPct}%`, transition: 'none' }}
               />
             </>
           )}
