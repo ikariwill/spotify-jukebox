@@ -95,7 +95,7 @@ export default function PlayerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-spotify-dark flex overflow-hidden">
+    <div className="h-screen bg-spotify-dark flex overflow-hidden">
       {/* Left panel — now playing + controls */}
       <div className="flex-1 flex flex-col items-center justify-center gap-8 p-10 lg:p-14">
         <NowPlaying />
@@ -128,12 +128,17 @@ export default function PlayerPage() {
       </div>
 
       {/* Right panel — queue + search + QR code */}
-      <div className="w-72 xl:w-80 flex flex-col gap-4 p-6 border-l border-white/5 bg-black/20 overflow-y-auto">
-        <QueuePreview />
-        <div className="border-t border-white/5 pt-4">
+      <div className="w-72 xl:w-80 h-screen flex flex-col border-l border-white/5 bg-black/20">
+        {/* Queue — fixed portion, scrolls internally */}
+        <div className="flex-none p-6 pb-0 min-h-0 max-h-[40%] flex flex-col">
+          <QueuePreview />
+        </div>
+        {/* Search — takes remaining space, results scroll inside */}
+        <div className="flex-1 min-h-0 flex flex-col border-t border-white/5 p-6 pt-4">
           <PlayerSearch />
         </div>
-        <div className="border-t border-white/5 pt-4 mt-auto">
+        {/* QR code — pinned to bottom */}
+        <div className="flex-none border-t border-white/5 p-6 pt-4">
           <QRCodeDisplay url={remoteUrl} />
         </div>
       </div>
