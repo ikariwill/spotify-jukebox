@@ -25,8 +25,7 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY shared/package.json ./shared/
 COPY backend/package.json ./backend/
 RUN pnpm install --frozen-lockfile --prod
-COPY --from=builder /app/shared/dist ./shared/dist
 COPY --from=builder /app/backend/dist ./backend/dist
 
 EXPOSE 3001
-CMD ["node", "backend/dist/index.js"]
+CMD ["node", "backend/dist/backend/src/index.js"]
