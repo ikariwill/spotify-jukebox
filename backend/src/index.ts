@@ -10,6 +10,7 @@ import { config } from './config'
 import { AnalyticsService } from './services/AnalyticsService'
 import { AutoPlayService } from './services/AutoPlayService'
 import { QueueService } from './services/QueueService'
+import { RedisQueueStore } from './services/RedisQueueStore'
 import { SpotifyService } from './services/SpotifyService'
 import { registerSocketHandlers } from './socket/handlers'
 
@@ -46,20 +47,28 @@ export const autoPlayService = new AutoPlayService(
 );
 
 // ── Session store (Redis if REDIS_URL set, else memory) ───────────────────────
-async function buildSessionStore() {
-  if (config.redis.url) {
+async function buildRedis() {
+  if (!config.redis.url) return null;
+  try {
+    const { createClient } = await import("redis" as any);
+    const client = createClient({ url: config.redis.url });
+    await client.connect();
+    console.log("[Redis] Connected");
+    return client;
+  } catch (err) {
+    console.warn("[Redis] Unavailable, falling back to memory:", err);
+    return null;
+  }
+}
+
+async function buildSessionStore(redisClient: any) {
+  if (redisClient) {
     try {
-      const { createClient } = await import("redis" as any);
       const { RedisStore } = await import("connect-redis");
-      const client = createClient({ url: config.redis.url });
-      await client.connect();
       console.log("[Session] Using Redis store");
-      return new RedisStore({ client });
+      return new RedisStore({ client: redisClient });
     } catch (err) {
-      console.warn(
-        "[Session] Redis unavailable, falling back to MemoryStore:",
-        err,
-      );
+      console.warn("[Session] RedisStore init failed:", err);
     }
   }
   console.log("[Session] Using MemoryStore");
@@ -67,7 +76,14 @@ async function buildSessionStore() {
 }
 
 async function start() {
-  const store = await buildSessionStore();
+  const redisClient = await buildRedis();
+  const store = await buildSessionStore(redisClient);
+
+  if (redisClient) {
+    const queueStore = new RedisQueueStore(redisClient);
+    queueService.setStore(queueStore);
+    await queueService.hydrate();
+  }
 
   const sessionMiddleware = session({
     store,

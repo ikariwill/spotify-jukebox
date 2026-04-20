@@ -56,7 +56,7 @@ spotifyRouter.post("/pause", async (req, res) => {
 
 spotifyRouter.post("/previous", async (req, res) => {
   try {
-    const prev = queueService.popHistory();
+    const prev = await queueService.popHistory();
     if (!prev) {
       res.status(400).json({ error: "No history available" });
       return;
