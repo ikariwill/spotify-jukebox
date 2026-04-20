@@ -15,12 +15,13 @@
 │  - express-session (tokens never leave here)             │
 │  - SpotifyService  QueueService  AnalyticsService        │
 │  - AutoPlayService  (polls every 5s when queue empty)    │
-└────────────────┬────────────────────────────────────────┘
-                 │  HTTP + WebSocket
-┌────────────────▼────────────────────────────────────────┐
-│  Mobile  (127.0.0.1:3000/remote)                         │
-│  - Search tracks, add to queue, vote ▲/▼                 │
-└─────────────────────────────────────────────────────────┘
+└────────────┬───────────────────────────────┬────────────┘
+             │  HTTP + WebSocket             │  node-redis
+┌────────────▼────────────────┐  ┌──────────▼────────────┐
+│  Mobile  (127.0.0.1:3000/   │  │  Redis                 │
+│  remote)                    │  │  - Sessions            │
+│  - Search, add, vote ▲/▼    │  │  - Queue + history     │
+└─────────────────────────────┘  └───────────────────────┘
 ```
 
 ## Monorepo packages
@@ -39,6 +40,12 @@ SpotifyService     Stateless. Receives TokenSet on every call.
 
 QueueService       In-memory queue with voting and anti-spam.
                    Owns the source of truth for the queue.
+                   If a RedisQueueStore is attached (via setStore),
+                   the queue and history are persisted to Redis.
+
+RedisQueueStore    Thin Redis adapter for QueueService.
+                   Serialises queue (JSON string) and history (Redis list).
+                   Wired in index.ts when REDIS_URL is set.
 
 AnalyticsService   In-memory play counts and user activity.
 
@@ -49,10 +56,19 @@ AutoPlayService    Polls every 5s. Needs setAdminTokens() called
 Services are instantiated in `backend/src/index.ts` and exported:
 
 ```ts
-export const spotifyService = new SpotifyService();
-export const queueService   = new QueueService();
+export const spotifyService   = new SpotifyService();
+export const queueService     = new QueueService();
 export const analyticsService = new AnalyticsService();
 export const autoPlayService  = new AutoPlayService(...);
+```
+
+On startup, if `REDIS_URL` is set, a Redis client is connected and wired:
+
+```ts
+const redisClient = await buildRedis(); // connects node-redis client
+const queueStore = new RedisQueueStore(redisClient);
+queueService.setStore(queueStore);
+await queueService.hydrate(); // loads persisted queue + history
 ```
 
 Routes and middleware import from `../index` (or `../../index`).  

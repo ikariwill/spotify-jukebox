@@ -8,8 +8,8 @@
 
 ```ts
 // backend/src/index.ts — inside async start()
-const { myRouter } = await import('./routes/myroute');
-app.use('/mypath', myRouter);
+const { myRouter } = await import("./routes/myroute");
+app.use("/mypath", myRouter);
 ```
 
 > Dynamic import is required here. Static imports from routes back into `index.ts` create a circular dependency because `index.ts` also exports the service instances.
@@ -18,11 +18,11 @@ app.use('/mypath', myRouter);
 
 ```ts
 // backend/src/routes/queue.ts
-import { queueService, io } from '../index';
+import { queueService, io } from "../index";
 
-router.post('/add', (req, res) => {
+router.post("/add", (req, res) => {
   const added = queueService.addTrack(req.body, req.sessionID);
-  io.emit('queue:update', queueService.getQueue());
+  io.emit("queue:update", queueService.getQueue());
   res.status(201).json(added);
 });
 ```
@@ -32,9 +32,9 @@ The `io` instance and all services are singletons exported from `index.ts`.
 ## Protecting a route
 
 ```ts
-import { requireAuth } from '../middleware/auth';
+import { requireAuth } from "../middleware/auth";
 
-router.get('/protected', requireAuth, (req, res) => {
+router.get("/protected", requireAuth, (req, res) => {
   // req.session.tokens is guaranteed to be fresh here
   const token = req.session.tokens!.accessToken;
 });
@@ -47,7 +47,7 @@ router.get('/protected', requireAuth, (req, res) => {
 Always pass tokens from `req.session.tokens` — never cache them in the service:
 
 ```ts
-router.get('/search', requireAuth, async (req, res) => {
+router.get("/search", requireAuth, async (req, res) => {
   const tracks = await spotifyService.searchTracks(q, req.session.tokens!);
   res.json(tracks);
 });
@@ -60,10 +60,10 @@ router.get('/search', requireAuth, async (req, res) => {
 Defined via module augmentation in `SpotifyService.ts`:
 
 ```ts
-declare module 'express-session' {
+declare module "express-session" {
   interface SessionData {
-    tokens?: TokenSet;       // { accessToken, refreshToken, expiresAt }
-    oauthState?: string;     // CSRF token for OAuth
+    tokens?: TokenSet; // { accessToken, refreshToken, expiresAt }
+    oauthState?: string; // CSRF token for OAuth
   }
 }
 ```
@@ -75,7 +75,7 @@ Access in any route or middleware via `req.session.tokens` and `req.sessionID`.
 After any queue mutation, always broadcast to all clients:
 
 ```ts
-io.emit('queue:update', queueService.getQueue());
+io.emit("queue:update", queueService.getQueue());
 ```
 
 Pass no `sessionId` to `getQueue()` for broadcasts — all clients receive `userVote: 0` and reconcile their own vote state locally.
@@ -92,6 +92,7 @@ Anti-spam is bypassed automatically when `queueService.partyMode === true`.
 ## Rate limiting
 
 Two limiters are available from `middleware/rateLimit.ts`:
+
 - `apiLimiter` — 60 req/min (applied globally on `/spotify`)
 - `searchLimiter` — 30 req/min (applied only on `GET /spotify/search`)
 
@@ -104,11 +105,21 @@ Public consumers always receive `QueueTrack` (from `shared/types/index.ts`), wit
 
 Do **not** add fields to `QueueTrack` in `shared/` without also handling them in `QueueService.getQueue()`.
 
-## Redis session store
+## Redis persistence
 
-The session store falls back to `MemoryStore` unless `REDIS_URL` is set.  
-The setup is in `index.ts` inside `buildSessionStore()`. Connect-redis v7 is used with ioredis.  
-No code changes are needed to switch — just set the env var.
+Set `REDIS_URL` in `backend/.env` to enable Redis. Two things are wired automatically in `index.ts`:
+
+1. **Session store** — `connect-redis` replaces the default `MemoryStore` (via `buildSessionStore()`)
+2. **Queue + history** — `RedisQueueStore` is attached to `QueueService` (via `setStore` + `hydrate()`)
+
+The client is `node-redis` (the `redis` npm package), dynamically imported so the backend starts without it if `REDIS_URL` is absent.
+
+```ts
+// REDIS_URL absent → MemoryStore + in-memory queue (no persistence)
+// REDIS_URL set    → RedisStore + RedisQueueStore (survives restarts)
+```
+
+No code changes needed to switch — just set the env var.
 
 ## AutoPlayService lifecycle
 
