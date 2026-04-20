@@ -95,13 +95,34 @@ export function ProgressBar() {
         onMouseLeave={handleMouseLeave}
       >
         <div className="relative w-full h-1.5 bg-[#535353] rounded-full overflow-hidden">
-          <div
-            className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
-            style={{
-              width: `${displayPct}%`,
-              transition: (dragging || skipTransition) ? 'none' : 'width 1s linear',
-            }}
-          />
+          {hoverPct === null && !dragging ? (
+            /* Normal: white fill up to playback position */
+            <div
+              className="absolute inset-y-0 left-0 bg-white rounded-full"
+              style={{
+                width: `${playbackPct}%`,
+                transition: skipTransition ? 'none' : 'width 1s linear',
+              }}
+            />
+          ) : dragging ? (
+            /* Dragging: green fill up to drag position */
+            <div
+              className="absolute inset-y-0 left-0 bg-spotify-green rounded-full"
+              style={{ width: `${dragPct}%` }}
+            />
+          ) : (
+            /* Hover: green up to playback, white from playback to hover */
+            <>
+              <div
+                className="absolute inset-y-0 left-0 bg-white"
+                style={{ width: `${Math.max(playbackPct, hoverPct!)}%`, transition: 'none' }}
+              />
+              <div
+                className="absolute inset-y-0 left-0 bg-spotify-green"
+                style={{ width: `${playbackPct}%`, transition: skipTransition ? 'none' : 'width 1s linear' }}
+              />
+            </>
+          )}
         </div>
 
         {/* Thumb — stays at playback/drag position, not hover */}
