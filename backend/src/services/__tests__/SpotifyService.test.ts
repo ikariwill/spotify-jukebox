@@ -9,7 +9,9 @@ function mockOk(data: unknown, status = 200) {
   mockFetch.mockResolvedValue({
     ok: true,
     status,
+    headers: { get: (key: string) => key === 'content-type' ? 'application/json' : null },
     text: () => Promise.resolve(status === 204 ? "" : JSON.stringify(data)),
+    json: () => Promise.resolve(data),
   });
 }
 
@@ -17,6 +19,7 @@ function mockErr(status: number) {
   mockFetch.mockResolvedValue({
     ok: false,
     status,
+    headers: { get: () => null },
     text: () => Promise.resolve(""),
   });
 }
