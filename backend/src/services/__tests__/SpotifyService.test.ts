@@ -294,4 +294,85 @@ describe("SpotifyService", () => {
       });
     });
   });
+
+  // ── seek ────────────────────────────────────────────────────────────────────
+
+  describe("seek", () => {
+    it("calls PUT /me/player/seek with position_ms in the URL", async () => {
+      mockOk(null, 204);
+      await service.seek(validTokens, 30000);
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toContain("/me/player/seek");
+      expect(url).toContain("position_ms=30000");
+      expect(init.method).toBe("PUT");
+    });
+  });
+
+  // ── searchTracksByPopularity ─────────────────────────────────────────────────
+
+  describe("searchTracksByPopularity", () => {
+    it("sorts results by descending popularity", async () => {
+      const low  = { ...spotifyTrackPayload, id: "low",  name: "Low",  popularity: 10 };
+      const high = { ...spotifyTrackPayload, id: "high", name: "High", popularity: 90 };
+      mockOk({ tracks: { items: [low, high] } });
+      const results = await service.searchTracksByPopularity("query", validTokens);
+      expect(results[0].spotifyId).toBe("high");
+      expect(results[1].spotifyId).toBe("low");
+    });
+
+    it("respects the returnLimit parameter", async () => {
+      const items = Array.from({ length: 5 }, (_, i) => ({
+        ...spotifyTrackPayload,
+        id: `t${i}`,
+        popularity: i,
+      }));
+      mockOk({ tracks: { items } });
+      const results = await service.searchTracksByPopularity("query", validTokens, 2);
+      expect(results).toHaveLength(2);
+    });
+  });
+
+  // ── getTracksByCategory ──────────────────────────────────────────────────────
+
+  describe("getTracksByCategory", () => {
+    it("uses the CATEGORY_SEARCH_FALLBACK query for known categories", async () => {
+      mockOk({ tracks: { items: [] } });
+      await service.getTracksByCategory(validTokens, "pop");
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toContain("pop+hits");
+    });
+
+    it("falls back to the categoryId itself for unknown categories", async () => {
+      mockOk({ tracks: { items: [] } });
+      await service.getTracksByCategory(validTokens, "bossa-nova");
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toContain("bossa-nova");
+    });
+  });
+
+  // ── getCategories ────────────────────────────────────────────────────────────
+
+  describe("getCategories", () => {
+    it("returns mapped categories from the browse endpoint", async () => {
+      mockOk({
+        categories: {
+          items: [
+            { id: "pop", name: "Pop", icons: [{ url: "https://img/pop.jpg" }] },
+            { id: "rock", name: "Rock", icons: [] },
+          ],
+        },
+      });
+      const categories = await service.getCategories(validTokens);
+      expect(categories).toHaveLength(2);
+      expect(categories[0]).toEqual({ id: "pop", name: "Pop", imageUrl: "https://img/pop.jpg" });
+      expect(categories[1]).toEqual({ id: "rock", name: "Rock", imageUrl: "" });
+    });
+
+    it("passes the limit parameter to the API", async () => {
+      mockOk({ categories: { items: [] } });
+      await service.getCategories(validTokens, 10);
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toContain("limit=10");
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { QueueService } from '../QueueService'
+import type { RedisQueueStore } from '../RedisQueueStore'
 
 import type { SpotifyTrack } from "@jukebox/shared";
 
@@ -245,6 +246,110 @@ describe("QueueService", () => {
     it("returns false after a track is added", () => {
       service.addTrack(makeTrack(), "s1");
       expect(service.isEmpty()).toBe(false);
+    });
+  });
+
+  // ── clearQueue ──────────────────────────────────────────────────────────────
+
+  describe("clearQueue", () => {
+    it("empties the queue", () => {
+      service.addTrack(makeTrack(), "s1");
+      service.addTrack(makeTrack({ spotifyId: "b" }), "s2");
+      service.clearQueue();
+      expect(service.isEmpty()).toBe(true);
+    });
+  });
+
+  // ── prependTrack ─────────────────────────────────────────────────────────────
+
+  describe("prependTrack", () => {
+    it("places the track at the front of the queue", () => {
+      service.addTrack(makeTrack({ spotifyId: "existing" }), "s1");
+      service.prependTrack(makeTrack({ spotifyId: "prepended" }));
+      expect(service.getQueue()[0].spotifyId).toBe("prepended");
+    });
+
+    it("sets addedBy to 'system'", () => {
+      service.prependTrack(makeTrack());
+      expect(service.getQueue()[0].addedBy).toBe("system");
+    });
+  });
+
+  // ── pushHistory / popHistory / getRecentlyPlayed ──────────────────────────
+
+  describe("pushHistory", () => {
+    it("adds an entry to the recently played list", () => {
+      service.pushHistory({ spotifyId: "h1", title: "T", artist: "A", albumArt: "", duration: 1000 });
+      expect(service.getRecentlyPlayedIds()).toContain("h1");
+    });
+  });
+
+  describe("popHistory", () => {
+    it("returns and removes the last history entry when no store is set", async () => {
+      service.pushHistory({ spotifyId: "h1", title: "T", artist: "A", albumArt: "", duration: 1000 });
+      const entry = await service.popHistory();
+      expect(entry?.spotifyId).toBe("h1");
+      expect(service.getRecentlyPlayedIds()).not.toContain("h1");
+    });
+
+    it("returns null when history is empty and no store is set", async () => {
+      expect(await service.popHistory()).toBeNull();
+    });
+
+    it("delegates to the store when one is set", async () => {
+      const mockStore = {
+        saveQueue: vi.fn(),
+        loadQueue: vi.fn().mockResolvedValue([]),
+        pushHistory: vi.fn(),
+        popHistory: vi.fn().mockResolvedValue({ spotifyId: "store-h1" }),
+        loadHistory: vi.fn().mockResolvedValue([]),
+      } as unknown as RedisQueueStore;
+      service.setStore(mockStore);
+      const entry = await service.popHistory();
+      expect(mockStore.popHistory).toHaveBeenCalled();
+      expect(entry?.spotifyId).toBe("store-h1");
+    });
+  });
+
+  // ── hydrate ──────────────────────────────────────────────────────────────────
+
+  describe("hydrate", () => {
+    it("does nothing when no store is set", async () => {
+      await expect(service.hydrate()).resolves.toBeUndefined();
+      expect(service.isEmpty()).toBe(true);
+    });
+
+    it("restores queue and history from the store", async () => {
+      const serializedTrack = {
+        id: "t1",
+        spotifyId: "sp1",
+        uri: "spotify:track:sp1",
+        title: "Track",
+        artist: "Artist",
+        album: "Album",
+        albumArt: "",
+        duration: 180000,
+        addedBy: "system",
+        votes: 0,
+        addedAt: Date.now(),
+        voters: { "s1": 1 as 1 | -1 },
+      };
+      const historyEntry = { spotifyId: "sp1", title: "Track", artist: "Artist", albumArt: "", duration: 180000 };
+
+      const mockStore = {
+        saveQueue: vi.fn(),
+        loadQueue: vi.fn().mockResolvedValue([serializedTrack]),
+        pushHistory: vi.fn(),
+        popHistory: vi.fn(),
+        loadHistory: vi.fn().mockResolvedValue([historyEntry]),
+      } as unknown as RedisQueueStore;
+
+      service.setStore(mockStore);
+      await service.hydrate();
+
+      expect(service.isEmpty()).toBe(false);
+      expect(service.getQueue()[0].spotifyId).toBe("sp1");
+      expect(service.getRecentlyPlayedIds()).toContain("sp1");
     });
   });
 });
